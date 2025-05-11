@@ -42,9 +42,9 @@ const Sidebar = () => {
             label: 'Analyse'
         },
         {
-            path: '/ecoles',
+            path: '/analyse-etablissement',
             icon: <FaSchool />,
-            label: 'Écoles'
+            label: 'Établissements'
         },
         {
             path: '/import-donnees',

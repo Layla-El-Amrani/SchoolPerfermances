@@ -8,41 +8,41 @@ import {
   useTheme,
   styled
 } from '@mui/material';
-import {
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  TrendingFlat as TrendingFlatIcon,
-  LocationCity as CommuneIcon,
-  School as SchoolIcon,
-  People as PeopleIcon,
-  EmojiEvents as SuccessIcon,
-  Warning as WarningIcon,
-  Assessment as AverageIcon
-} from '@mui/icons-material';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import LocationCityIcon from '@mui/icons-material/LocationCity';
+import SchoolIcon from '@mui/icons-material/School';
+import PeopleIcon from '@mui/icons-material/People';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import WarningIcon from '@mui/icons-material/Warning';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
-const StyledCard = styled(Card)(({ theme, color }) => ({
+const StyledCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'color' && prop !== 'fullHeight',
+})(({ theme, color, fullHeight }) => ({
   height: '100%',
   width: '100%',
-  minWidth: '280px',
-  maxWidth: '100%',
+  minHeight: '200px',
   display: 'flex',
   flexDirection: 'column',
-  borderRadius: '16px',
-  boxShadow: '0 4px 20px 0 rgba(0,0,0,0.05)',
-  transition: 'all 0.3s cubic-bezier(.25,.8,.25,1)',
-  border: '1px solid',
-  borderColor: theme.palette.divider,
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
   '&:hover': {
-    transform: 'translateY(-5px)',
-    boxShadow: `0 8px 25px 0 ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15)}`,
-    borderColor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.3)
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
   },
+  ...(color && {
+    borderLeft: `4px solid ${theme.palette[color]?.main || theme.palette.primary.main}`,
+  }),
   '& .MuiCardContent-root': {
-    padding: theme.spacing(3),
     flexGrow: 1,
     display: 'flex',
     flexDirection: 'column',
-    boxSizing: 'border-box',
+    height: '100%',
+    padding: theme.spacing(3),
+    '&:last-child': {
+      paddingBottom: theme.spacing(3),
+    },
   }
 }));
 
@@ -85,25 +85,64 @@ const TrendBadge = styled(Box)(({ theme, trend }) => ({
   }
 }));
 
-const StatCard = ({ title, value, type, trend = 0 }) => {
+const StatCard = (props) => {
+  const { 
+    title, 
+    value, 
+    type, 
+    trend = 0, 
+    subtitle, 
+    fullHeight = false, 
+    icon: IconProp,
+    sx = {}
+  } = props;
   const theme = useTheme();
   
-  const getIcon = () => {
+  // Configuration des icônes par type
+  const getIconConfig = () => {
+    if (IconProp) {
+      return {
+        Icon: IconProp,
+        color: color
+      };
+    }
+    
     switch (type) {
       case 'communes':
-        return <CommuneIcon />;
+        return {
+          Icon: LocationCityIcon,
+          color: 'primary'
+        };
       case 'etablissements':
-        return <SchoolIcon />;
+        return {
+          Icon: SchoolIcon,
+          color: 'secondary'
+        };
       case 'eleves':
-        return <PeopleIcon />;
+        return {
+          Icon: PeopleIcon,
+          color: 'info'
+        };
       case 'moyenne':
-        return <AverageIcon />;
+        return {
+          Icon: AssessmentIcon,
+          color: 'success'
+        };
       case 'reussite':
-        return <SuccessIcon />;
+        return {
+          Icon: EmojiEventsIcon,
+          color: 'success'
+        };
       case 'echec':
-        return <WarningIcon />;
+        return {
+          Icon: WarningIcon,
+          color: 'error'
+        };
       default:
-        return null;
+        return {
+          Icon: null,
+          color: 'primary'
+        };
     }
   };
 
@@ -158,12 +197,42 @@ const StatCard = ({ title, value, type, trend = 0 }) => {
   };
 
   const color = getColor();
-
+  const iconConfig = getIconConfig();
+  const Icon = iconConfig?.Icon || null;
+  const iconColor = iconConfig?.color || color;
+  
   return (
-    <StyledCard color={color}>
+    <StyledCard color={color} fullHeight={fullHeight} sx={sx}>
       <CardContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          justifyContent: 'space-between',
+          flexGrow: 1,
+          minHeight: '150px'
+        }}>
+          <Box display="flex" flexDirection="column" alignItems="flex-start" mb={2}>
+            {Icon && (
+              <Box 
+                sx={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: alpha(theme.palette[iconColor]?.main || theme.palette.primary.main, 0.1),
+                  color: theme.palette[iconColor]?.main || theme.palette.primary.main,
+                  marginBottom: 2,
+                  '& svg': {
+                    fontSize: '24px'
+                  }
+                }}
+              >
+                <Icon />
+              </Box>
+            )}
             <Box>
               <Typography 
                 variant="subtitle2" 
@@ -178,7 +247,7 @@ const StatCard = ({ title, value, type, trend = 0 }) => {
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  maxWidth: '160px'
+                  maxWidth: '100%'
                 }}
               >
                 {title}
@@ -191,8 +260,10 @@ const StatCard = ({ title, value, type, trend = 0 }) => {
                     fontWeight: 700,
                     color: theme.palette.text.primary,
                     lineHeight: 1.2,
-                    fontSize: '1.8rem',
-                    whiteSpace: 'nowrap'
+                    fontSize: '1.6rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
                   }}
                 >
                   {formatValue()}
@@ -200,26 +271,37 @@ const StatCard = ({ title, value, type, trend = 0 }) => {
                 {getTrend()}
               </Box>
             </Box>
-            <IconContainer color={color}>
-              {getIcon()}
-            </IconContainer>
           </Box>
           
           <Box sx={{ mt: 'auto', pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <Typography 
-              variant="caption" 
-              color="textSecondary"
-              sx={{ 
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: '0.75rem',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {type === 'moyenne' || type === 'reussite' || type === 'echec' 
-                ? 'Moyenne sur 20' 
-                : 'Total'}
-            </Typography>
+            {subtitle ? (
+              <Typography 
+                variant="caption" 
+                color="textSecondary"
+                sx={{ 
+                  display: 'block',
+                  fontSize: '0.75rem',
+                  lineHeight: 1.4
+                }}
+              >
+                {subtitle}
+              </Typography>
+            ) : (
+              <Typography 
+                variant="caption" 
+                color="textSecondary"
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '0.75rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {type === 'moyenne' || type === 'reussite' || type === 'echec' 
+                  ? 'Moyenne sur 20' 
+                  : 'Total'}
+              </Typography>
+            )}
           </Box>
         </Box>
       </CardContent>

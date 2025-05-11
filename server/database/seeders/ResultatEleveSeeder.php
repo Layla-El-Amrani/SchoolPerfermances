@@ -20,32 +20,42 @@ class ResultatEleveSeeder extends Seeder
             return;
         }
 
-        // Créer des résultats pour chaque élève dans chaque matière
-        $resultats = [
-            [
-                'code_eleve' => 'ELEVE127680001',
-                'id_matiere' => 1,
-                'annee_scolaire' => '2025-2026',
-                'session' => '1ère session',
-                'MoyenNoteCC' => 15,
-                'MoyenExamenNote' => 18,
-                'MoyenCC' => 16,
-                'MoyenExam' => 17,
-                'MoyenSession' => 16.5
-            ],
-            [
-                'code_eleve' => 'ELEVE127680002',
-                'id_matiere' => 1,
-                'annee_scolaire' => '2025-2026',
-                'session' => '1ère session',
-                'MoyenNoteCC' => 14,
-                'MoyenExamenNote' => 16,
-                'MoyenCC' => 15,
-                'MoyenExam' => 16,
-                'MoyenSession' => 15.5
-            ],
-            // Ajoutez d'autres résultats ici
-        ];
+        // Récupérer tous les élèves
+        $eleves = \App\Models\Eleve::all();
+        $matieres = \App\Models\Matiere::all();
+        
+        if ($eleves->isEmpty() || $matieres->isEmpty()) {
+            $this->command->error('Aucun élève ou matière trouvé. Veuillez d\'abord exécuter les seeders EleveSeeder et MatiereSeeder.');
+            return;
+        }
+        
+        $resultats = [];
+        
+        // Pour chaque élève, créer des résultats dans plusieurs matières
+        foreach ($eleves as $eleve) {
+            // Choisir aléatoirement entre 3 et 5 matières par élève
+            $nbMatieres = rand(3, min(5, $matieres->count()));
+            $matieresAleatoires = $matieres->random($nbMatieres);
+            
+            foreach ($matieresAleatoires as $matiere) {
+                // Générer des notes aléatoires réalistes
+                $moyenCC = rand(10, 19) + (rand(0, 9) / 10); // Entre 10.0 et 19.9
+                $moyenExam = rand(10, 19) + (rand(0, 9) / 10); // Entre 10.0 et 19.9
+                $moyenSession = round(($moyenCC * 0.4) + ($moyenExam * 0.6), 1); // 40% CC + 60% Examen
+                
+                $resultats[] = [
+                    'code_eleve' => $eleve->code_eleve,
+                    'id_matiere' => $matiere->id_matiere,
+                    'annee_scolaire' => $anneeScolaire->annee_scolaire,
+                    'session' => '1ère session',
+                    'MoyenNoteCC' => $moyenCC,
+                    'MoyenExamenNote' => $moyenExam,
+                    'MoyenCC' => $moyenCC,
+                    'MoyenExam' => $moyenExam,
+                    'MoyenSession' => $moyenSession
+                ];
+            }
+        }
 
         foreach ($resultats as $resultat) {
             try {

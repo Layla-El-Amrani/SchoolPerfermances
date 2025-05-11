@@ -17,27 +17,55 @@ use Illuminate\Support\Facades\DB;
 class EtablissementController extends Controller
 {
 
+    public function show($id_etablissement)
+    {
+        try {
+            $etablissement = Etablissement::select(
+                    'code_etab',
+                    'nom_etab_fr',
+                    'nom_etab_ar',
+                    'code_commune',
+                    'cycle'
+                )
+                ->where('code_etab', $id_etablissement)
+                ->first();
+
+            if (!$etablissement) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Établissement non trouvé'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $etablissement
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des détails de l\'établissement',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
 
     /**
      * Get establishments by commune
      */
-    public function getEtablissementsByCommune(Request $request)
+    public function getEtablissementsByCommune($code_commune)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'code_commune' => 'required|exists:commune,cd_com'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur de validation',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $etablissements = Etablissement::where('code_commune', $request->code_commune)
+            $etablissements = Etablissement::select(
+                    'code_etab',
+                    'nom_etab_fr',
+                    'nom_etab_ar',
+                    'code_commune',
+                    'cycle'
+                )
+                ->where('code_commune', $code_commune)
                 ->orderBy('nom_etab_fr', 'asc')
                 ->get();
 

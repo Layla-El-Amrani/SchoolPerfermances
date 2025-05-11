@@ -42,9 +42,30 @@ Route::prefix('commune')->group(function () {
 
 // Routes API pour les établissements
 Route::prefix('etablissement')->group(function () {
+    // Récupérer tous les établissements
+    Route::get('/', [EtablissementController::class, 'index']);
+    // Récupérer les détails d'un établissement
+    Route::get('/{id_etablissement}', [EtablissementController::class, 'show']);
+    // Récupérer les établissements par commune
+    Route::get('/commune/{code_commune}', [EtablissementController::class, 'getEtablissementsByCommune']);
     Route::get('/{id_etablissement}/stats/{annee_scolaire?}', [EtablissementController::class, 'statEtablissement']);
     Route::get('/{id_etablissement}/niveaux/{annee_scolaire?}/{code_niveau?}', [EtablissementController::class, 'statNiveau']);
     Route::get('/{id_etablissement}/matieres/{code_niveau}/{annee_scolaire?}', [EtablissementController::class, 'statMatiere']);
+
+// Routes API pour les provinces
+Route::get('/provinces', [\App\Http\Controllers\Api\ProvinceController::class, 'index']);
+
+// Routes API pour les rapports
+Route::prefix('rapports')->group(function () {
+    // Récupérer la liste des rapports
+    Route::get('/', [RapportController::class, 'index']);
+    // Générer un nouveau rapport
+    Route::post('/generer', [RapportController::class, 'generate']);
+    // Télécharger un rapport existant
+    Route::get('/{id}/download', [RapportController::class, 'download']);
+    // Supprimer un rapport
+    Route::delete('/{id}', [RapportController::class, 'destroy']);
+});
     Route::get('/{id_etablissement}/evolution', [EtablissementController::class, 'evaluationAnnuelle']);
 });
 

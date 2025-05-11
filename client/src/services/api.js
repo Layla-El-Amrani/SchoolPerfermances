@@ -32,7 +32,7 @@ api.interceptors.response.use(
 // Exporter les endpoints de l'API
 export const apiEndpoints = {
     // Statistiques Province
-    statsProvince: () => '/province/stats',
+    statsProvince: (annee) => '/province/stats',
     evolutionProvince: '/province/evolution',
     topEtablissements: (annee) => `/province/top-etablissements/${annee}`,
     statsParCycle: (annee) => `/province/cycles/${annee}`,
@@ -45,9 +45,18 @@ export const apiEndpoints = {
     statsParCycleCommune: (id, annee) => `/commune/${id}/cycles/${annee}`,
     
     // Établissements
+    getEtablissements: '/etablissements',
+    getEtablissementsByCommune: (code_commune) => `/etablissement/by-commune?code_commune=${encodeURIComponent(code_commune)}`,
     statEtablissement: (id, annee) => `/etablissement/${id}/stats/${annee}`,
     statNiveau: (id, annee, codeNiveau) => `/etablissement/${id}/niveaux/${annee}/${codeNiveau}`,
     statMatiere: (id, codeNiveau, annee) => `/etablissement/${id}/matieres/${codeNiveau}/${annee}`,
+    
+    // Provinces
+    getProvinces: '/provinces',
+    
+    // Rapports
+    getRapports: '/rapports',
+    generateRapport: '/rapports/generer',
     evaluationAnnuelle: (id) => `/etablissement/${id}/evolution`,
     
     // Rapports

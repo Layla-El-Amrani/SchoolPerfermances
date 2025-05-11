@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Card, CardContent, Typography, useTheme } from '@mui/material';
+import EducationLoading from './EducationLoading';
 import { Line } from 'react-chartjs-2';
 import { api, apiEndpoints } from '../services/api';
 import {
@@ -253,11 +254,7 @@ const ProgressionMoyenne = () => {
 
   // Rendu conditionnel
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}>
-        <Typography>Chargement en cours...</Typography>
-      </Box>
-    );
+    return <EducationLoading message="Chargement des données de progression" />;
   }
 
   if (error) {

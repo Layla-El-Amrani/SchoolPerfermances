@@ -194,80 +194,129 @@ class DashboardController extends Controller
 
     public function topEtablissementsParProvince($anneeScolaire = null)
     {
-        
-        // Charger les élèves avec leurs résultats et leur établissement
-        $eleves = Eleve::with(['etablissement', 'resultats' => function($q) use ($anneeScolaire) {
-            if ($anneeScolaire) {
-                $q->where('annee_scolaire', $anneeScolaire);
-            }
-        }])
-        ->get();
-        
-        
-        
-        
-        
-        // Filtrer les élèves qui ont des résultats pour l'année spécifiée
-        $elevesAvecResultats = $eleves->filter(function($eleve) use ($anneeScolaire) {
-            foreach ($eleve->resultats as $resultat) {
-                if ($resultat->annee_scolaire === $anneeScolaire) {
-                    return true;
+        try {
+            // Si aucune année n'est spécifiée, utiliser l'année courante
+            if (!$anneeScolaire) {
+                $anneeCourante = \App\Models\AnneeScolaire::where('est_courante', true)->first();
+                if ($anneeCourante) {
+                    $anneeScolaire = $anneeCourante->annee_scolaire;
                 }
             }
-            return false;
-        });
-        
-        
-        
-        // Grouper les élèves par établissement
-        $etablissements = $elevesAvecResultats->groupBy('code_etab')->map(function($eleves, $codeEtab) {
+
+            // Log de débogage
+            \Log::info("Début de topEtablissementsParProvince pour l'année: " . $anneeScolaire);
             
-            // Rechercher l'établissement avec et sans suffixe R
-            $etablissement = Etablissement::where('code_etab', $codeEtab)
-                ->orWhere('code_etab', str_replace('R', '', $codeEtab))
-                ->first();
+            // Récupérer tous les résultats de l'année scolaire
+            $resultats = \App\Models\ResultatEleve::where('annee_scolaire', $anneeScolaire)
+                ->with('eleve.etablissement')
+                ->get();
+                
+            \Log::info("Nombre de résultats trouvés: " . $resultats->count());
             
-            if (!$etablissement) {
-                return null;
+            if ($resultats->isEmpty()) {
+                \Log::info("Aucun résultat trouvé pour l'année: " . $anneeScolaire);
+                return response()->json([]);
             }
 
-            $moyenneGenerale = 0;
-            $nombreEleves = 0;
-            $nombreResultats = 0;
-
-            foreach ($eleves as $eleve) {
-                // Vérifier si l'élève a des résultats
-                if (count($eleve->resultats) > 0) {
-                    $nombreEleves++;
+            // Grouper les résultats par établissement
+            $etablissementsData = [];
+            $missingEtablissement = 0;
+            $missingEleve = 0;
+            
+            foreach ($resultats as $resultat) {
+                if (!$resultat->eleve) {
+                    $missingEleve++;
+                    continue;
                 }
-
-                foreach ($eleve->resultats as $resultat) {
-
-                    $moyenneGenerale += $resultat->MoyenSession;
-                    $nombreResultats++;
+                
+                if (!$resultat->eleve->etablissement) {
+                    $missingEtablissement++;
+                    continue;
                 }
+                
+                $codeEtab = $resultat->eleve->etablissement->code_etab;
+                
+                // Log le premier résultat pour vérification
+                if (empty($etablissementsData)) {
+                    \Log::info("Premier résultat valide", [
+                        'code_eleve' => $resultat->code_eleve,
+                        'code_etab' => $codeEtab,
+                        'etablissement' => $resultat->eleve->etablissement->nom_etab_fr,
+                        'MoyenSession' => $resultat->MoyenSession
+                    ]);
+                }
+                
+                if (!isset($etablissementsData[$codeEtab])) {
+                    $etablissementsData[$codeEtab] = [
+                        'id' => $codeEtab,
+                        'nom' => $resultat->eleve->etablissement->nom_etab_fr,
+                        'cycle' => $resultat->eleve->etablissement->cycle,
+                        'moyenne' => 0,
+                        'total_notes' => 0,
+                        'total_eleves' => [],
+                        'nombre_eleves' => 0
+                    ];
+                }
+                
+                // Garder une trace des élèves uniques et de leurs moyennes
+                if (!isset($etablissementsData[$codeEtab]['total_eleves'][$resultat->code_eleve])) {
+                    // Premier résultat pour cet élève, initialiser sa moyenne
+                    $etablissementsData[$codeEtab]['total_eleves'][$resultat->code_eleve] = [
+                        'somme_notes' => 0,
+                        'nb_notes' => 0
+                    ];
+                }
+                
+                // Ajouter la note à la somme de l'élève
+                $etablissementsData[$codeEtab]['total_eleves'][$resultat->code_eleve]['somme_notes'] += $resultat->MoyenSession;
+                $etablissementsData[$codeEtab]['total_eleves'][$resultat->code_eleve]['nb_notes']++;
             }
-
-            // Calculer la moyenne générale
-            $moyenneGenerale = $nombreResultats > 0 ? $moyenneGenerale / $nombreResultats : 0;
-
-            return [
-                'nom_etablissement' => $etablissement->nom_etab_fr,
-                'moyenne_generale' => $moyenneGenerale,
-                'nombre_eleves' => $nombreEleves
-            ];
-        })->filter(); // Filtrer les établissements null
-
-        // Trier par moyenne générale décroissante et prendre les 5 premiers
-        $resultats = $etablissements->sortByDesc('moyenne_generale')->take(5);
-        
-        // Convertir les résultats en tableau pour une meilleure lisibilité
-        $resultatsArray = $resultats->values()->toArray();
-
-        return response()->json([
-            'success' => true,
-            'data' => $resultatsArray
-        ]);
+            
+            // Calculer les moyennes
+            foreach ($etablissementsData as &$etab) {
+                $totalMoyennes = 0;
+                $nbElevesAvecNotes = 0;
+                
+                // Pour chaque élève, calculer sa moyenne
+                foreach ($etab['total_eleves'] as $eleveData) {
+                    if ($eleveData['nb_notes'] > 0) {
+                        $moyenneEleve = $eleveData['somme_notes'] / $eleveData['nb_notes'];
+                        $totalMoyennes += $moyenneEleve;
+                        $nbElevesAvecNotes++;
+                    }
+                }
+                
+                // Calculer la moyenne de l'établissement
+                if ($nbElevesAvecNotes > 0) {
+                    $etab['moyenne'] = round($totalMoyennes / $nbElevesAvecNotes, 2);
+                    $etab['nombre_eleves'] = $nbElevesAvecNotes;
+                } else {
+                    $etab['moyenne'] = 0;
+                    $etab['nombre_eleves'] = 0;
+                }
+                
+                unset($etab['total_eleves']);
+            }
+            
+            // Trier par moyenne décroissante et prendre les 5 premiers
+            $etablissements = collect($etablissementsData)
+                ->sortByDesc('moyenne')
+                ->take(5)
+                ->values();
+                
+            \Log::info("Résultats finaux", [
+                'nombre_etablissements' => $etablissements->count(),
+                'etablissements' => $etablissements->toArray(),
+                'missing_eleve' => $missingEleve,
+                'missing_etablissement' => $missingEtablissement
+            ]);
+            
+            return response()->json($etablissements);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur dans topEtablissementsParProvince: ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur lors de la récupération des données'], 500);
+        }
     }
 
     public function statsParCycle($anneeScolaire)
@@ -339,75 +388,158 @@ class DashboardController extends Controller
 
     public function comparaisonCommunesProvince($id_province, $anneeScolaire = null)
     {
-        // Si aucune année n'est spécifiée, utiliser l'année courante
-        if (!$anneeScolaire) {
-            $anneeCourante = AnneeScolaire::where('est_courante', true)->first();
-            if ($anneeCourante) {
-                $anneeScolaire = $anneeCourante->annee_scolaire;
-            }
-        }
-
-        // Récupérer la province
-        $province = Province::with([
-            'communes.etablissements.eleves.resultats' => function($query) use ($anneeScolaire) {
-                if ($anneeScolaire) {
-                    $query->where('annee_scolaire', $anneeScolaire);
+        try {
+            // Si aucune année n'est spécifiée, utiliser l'année courante
+            if (!$anneeScolaire) {
+                $anneeCourante = AnneeScolaire::where('est_courante', true)->first();
+                if ($anneeCourante) {
+                    $anneeScolaire = $anneeCourante->annee_scolaire;
+                } else {
+                    $anneeScolaire = '2025-2026'; // Valeur par défaut si aucune année courante n'est définie
                 }
             }
-        ])->findOrFail($id_province);
 
-        // Récupérer les communes avec leurs statistiques
-        $communes = $province->communes->map(function($commune) {
-            $nombreEleves = 0;
-            $sommeMoyennes = 0;
-            $nombreMoyennes = 0;
-            $nombreReussis = 0;
+            \Log::info("Début de comparaisonCommunesProvince");
+            \Log::info("ID Province: " . $id_province);
+            \Log::info("Année scolaire: " . $anneeScolaire);
 
-            foreach ($commune->etablissements as $etablissement) {
-                foreach ($etablissement->eleves as $eleve) {
-                    foreach ($eleve->resultats as $resultat) {
-                        $nombreEleves++;
-                        $sommeMoyennes += $resultat->MoyenSession;
-                        $nombreMoyennes++;
-                        if ($resultat->MoyenSession >= 10) {
-                            $nombreReussis++;
-                        }
+            // Vérifier d'abord si la province existe
+            $province = Province::find($id_province);
+            if (!$province) {
+                \Log::error("Province non trouvée avec l'ID: " . $id_province);
+                return response()->json(['error' => 'Province non trouvée'], 404);
+            }
+            \Log::info("Province trouvée: " . $province->nom_province);
+
+            // Vérifier les colonnes de la table resultat_eleve
+            $columns = \DB::select('SHOW COLUMNS FROM resultat_eleve');
+            $moyenneColumn = null;
+            
+            foreach ($columns as $column) {
+                if (strtolower($column->Field) === 'moyensession' || strtolower($column->Field) === 'moyenne') {
+                    $moyenneColumn = $column->Field;
+                    break;
+                }
+            }
+            
+            if (!$moyenneColumn) {
+                // Si on ne trouve pas la colonne, essayer de deviner d'après le type
+                foreach ($columns as $column) {
+                    if (stripos($column->Type, 'decimal') !== false || 
+                        stripos($column->Type, 'float') !== false ||
+                        stripos($column->Type, 'double') !== false) {
+                        $moyenneColumn = $column->Field;
+                        break;
                     }
                 }
             }
+            
+            if (!$moyenneColumn) {
+                // Si on ne trouve toujours pas, utiliser la première colonne numérique
+                foreach ($columns as $column) {
+                    if (in_array(strtolower($column->Type), ['int', 'decimal', 'float', 'double'])) {
+                        $moyenneColumn = $column->Field;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$moyenneColumn) {
+                // Si on ne trouve toujours pas, utiliser la première colonne
+                $moyenneColumn = $columns[0]->Field;
+            }
+            
+            \Log::info("Colonne utilisée pour la moyenne: " . $moyenneColumn);
+            \Log::info("Colonnes disponibles: " . json_encode(array_map(function($c) { return $c->Field; }, $columns)));
 
-            $moyenneGenerale = $nombreMoyennes > 0 ? $sommeMoyennes / $nombreMoyennes : 0;
-            $tauxReussite = $nombreEleves > 0 ? ($nombreReussis / $nombreEleves) * 100 : 0;
+            // Récupérer les communes de la province avec le nombre d'élèves et les résultats
+            $query = \DB::table('commune as c')
+                ->leftJoin('etablissement as e', 'c.cd_com', '=', 'e.code_commune')
+                ->leftJoin('eleve as el', 'e.code_etab', '=', 'el.code_etab')
+                ->leftJoin('resultat_eleve as r', function($join) use ($anneeScolaire) {
+                    $join->on('el.code_eleve', '=', 'r.code_eleve')
+                         ->where('r.annee_scolaire', '=', $anneeScolaire);
+                })
+                ->where('c.id_province', $id_province);
+            
+            // Ajouter les sélections avec la colonne de moyenne dynamique
+            $query->select(
+                'c.cd_com',
+                'c.ll_com as commune',
+                \DB::raw('COUNT(DISTINCT el.code_eleve) as nombre_eleves'),
+                \DB::raw('AVG(r.' . $moyenneColumn . ') as moyenne_generale'),
+                \DB::raw('SUM(CASE WHEN r.' . $moyenneColumn . ' >= 10 THEN 1 ELSE 0 END) / COUNT(DISTINCT el.code_eleve) * 100 as taux_reussite')
+            )
+            ->groupBy('c.cd_com', 'c.ll_com');
+            
+            // Afficher la requête SQL pour le débogage
+            \Log::info("Requête SQL: " . $query->toSql());
+            \Log::info("Paramètres: " . json_encode($query->getBindings()));
+            
+            $communes = $query->get();
+            \Log::info("Résultats bruts: " . json_encode($communes));
 
+            // Vérifier les données brutes
+            if ($communes->isNotEmpty()) {
+                $firstCommune = $communes->first();
+                \Log::info("Première commune - Nom: {$firstCommune->commune}, Nombre élèves: {$firstCommune->nombre_eleves}, Moyenne: {$firstCommune->moyenne_generale}");
+                
+                // Vérifier les valeurs nulles
+                $nullAverages = $communes->where('moyenne_generale', null)->count();
+                $zeroAverages = $communes->where('moyenne_generale', 0)->count();
+                \Log::info("Moyennes nulles: $nullAverages, Moyennes à zéro: $zeroAverages");
+                
+                // Vérifier les données d'un élève au hasard
+                $sampleEleve = DB::table('eleve')
+                    ->join('resultat_eleve', 'eleve.code_eleve', '=', 'resultat_eleve.code_eleve')
+                    ->where('resultat_eleve.annee_scolaire', $anneeScolaire)
+                    ->first();
+                \Log::info("Exemple d'élève avec résultat: " . json_encode($sampleEleve));
+            }
+
+            \Log::info("Nombre de communes avec statistiques: " . $communes->count());
+
+            // Formater les résultats
+            $communes = $communes->map(function($commune) {
                 return [
-                    'commune' => $commune->nom_commune,
-                    'nombre_eleves' => $nombreEleves,
-                    'moyenne_generale' => round($moyenneGenerale, 2),
-                    'taux_reussite' => round($tauxReussite, 2),
-                'rang' => null
+                    'commune' => $commune->commune,
+                    'nombre_eleves' => (int)$commune->nombre_eleves,
+                    'moyenne_generale' => $commune->moyenne_generale ? round((float)$commune->moyenne_generale, 2) : 0,
+                    'taux_reussite' => $commune->taux_reussite ? round((float)$commune->taux_reussite, 2) : 0,
+                    'rang' => 0
                 ];
-            });
+            })->sortByDesc('moyenne_generale')->values();
 
-        // Trier les communes par moyenne générale (descendant)
-        $communes = $communes->sortByDesc('moyenne_generale');
+            // Ajouter les rangs
+            $rang = 1;
+            foreach ($communes as &$commune) {
+                $commune['rang'] = $rang++;
+            }
 
-        // Ajouter le rang à chaque commune
-        $communes = $communes->map(function($commune, $index) {
-            $commune['rang'] = $index + 1;
-            return $commune;
-        });
+            // Calculer la moyenne générale de la province
+            $moyenneProvince = $communes->avg('moyenne_generale');
 
-        // Calculer la moyenne générale de la province
-        $moyenneProvince = $communes->avg('moyenne_generale');
+            \Log::info("Moyenne générale de la province: " . $moyenneProvince);
+            \Log::info("Nombre de communes retournées: " . $communes->count());
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'province' => $province->nom_province,
-                'moyenne_generale_province' => round($moyenneProvince, 2),
-                'communes' => $communes
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'province' => $province->nom_province,
+                    'moyenne_generale_province' => round($moyenneProvince, 2),
+                    'communes' => $communes
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur dans comparaisonCommunesProvince: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des données des communes',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
   

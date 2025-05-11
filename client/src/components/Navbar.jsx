@@ -9,7 +9,7 @@ const Navbar = () => {
     const [language, setLanguage] = useState('fr');
     const [notifications, setNotifications] = useState(3);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-    const { selectedYear, setSelectedYear, years } = useYear();
+    const { selectedYear, setSelectedYear, years, globalLoading } = useYear();
 
 
     // Gestion du mode plein écran
@@ -75,7 +75,11 @@ const Navbar = () => {
                 <div className="navbar-actions-left">
                     <div className="year-selector">
                         <FaCalendar />
-                        <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                        <select 
+                            value={selectedYear} 
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            disabled={globalLoading}
+                        >
                             {years.map((year) => (
                                 <option key={year} value={year}>
                                     {year}

@@ -4,17 +4,16 @@ import {
   Grid, 
   Box, 
   Typography, 
-  Paper, 
-  useTheme,
-  styled,
-  CircularProgress,
   Card,
+  CardContent,
   CardMedia,
-  CardContent
+  styled,
+  CircularProgress
 } from '@mui/material';
 import StatCard from '../components/StatCard';
 import ProgressionMoyenne from '../components/ProgressionMoyenne';
 import TopEtablissements from '../components/TopEtablissements';
+import ComparaisonCommunes from '../components/ComparaisonCommunes';
 import { api, apiEndpoints } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useYear } from '../contexts/YearContext';
@@ -47,47 +46,36 @@ const StatsGrid = styled(Grid)(({ theme }) => ({
   marginTop: theme.spacing(3),
   '& > .MuiGrid-item': {
     display: 'flex',
-    padding: theme.spacing(1),
+    padding: theme.spacing(1.5),
     '& > div': {
-      width: '100%',
-      height: '100%',
       margin: theme.spacing(1),
-      transition: 'all 0.3s ease-in-out',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: theme.shadows[4],
-      }
-    },
-    [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(1),
-      width: '100%',
-      marginBottom: theme.spacing(2),
-    },
-    [theme.breakpoints.between('sm', 'md')]: {
-      width: 'calc(50% - 24px)',
-      '& > div': {
-        margin: theme.spacing(1.5),
+      width: 'calc(100% - 16px)',
+      height: 'calc(100% - 16px)',
+      [theme.breakpoints.down('sm')]: {
+        padding: theme.spacing(1.5),
+        width: '100%',
+        marginBottom: theme.spacing(2),
       },
-      '&:nth-of-type(2n)': {
-        marginRight: 0,
+      [theme.breakpoints.between('sm', 'md')]: {
+        width: 'calc(50% - 20px)',
+        margin: theme.spacing(0, 2, 3, 0),
+        '&:nth-child(2n)': {
+          marginRight: 0,
+        },
       },
-    },
-    [theme.breakpoints.between('md', 'xl')]: {
-      width: 'calc(33.333% - 24px)',
-      '& > div': {
-        margin: theme.spacing(1.5),
+      [theme.breakpoints.between('md', 'xl')]: {
+        width: 'calc(33.333% - 16px)',
+        margin: theme.spacing(0, 2, 3, 0),
+        '&:nth-child(3n)': {
+          marginRight: 0,
+        }
       },
-      '&:nth-of-type(3n)': {
-        marginRight: 0,
-      }
-    },
-    [theme.breakpoints.up('xl')]: {
-      width: 'calc(20% - 24px)',
-      '& > div': {
-        margin: theme.spacing(1.5),
-      },
-      '&:nth-of-type(5n)': {
-        marginRight: 0,
+      [theme.breakpoints.up('xl')]: {
+        width: 'calc(20% - 17px)',
+        margin: theme.spacing(0, 2, 3, 0),
+        '&:nth-child(5n)': {
+          marginRight: 0,
+        }
       }
     }
   },
@@ -192,7 +180,7 @@ const Dashboard = () => {
             </DashboardHeader>
 
             <StatsGrid container spacing={0}>
-                <Grid item>
+                <Grid>
                     <StatCard 
                         title="Communes"
                         value={statistiques.nombre_communes}
@@ -200,7 +188,7 @@ const Dashboard = () => {
                         trend={2.5}
                     />
                 </Grid>
-                <Grid item>
+                <Grid>
                     <StatCard 
                         title="Établissements"
                         value={statistiques.nombre_etablissements}
@@ -241,37 +229,65 @@ const Dashboard = () => {
                     />
                 </Grid>
             </StatsGrid>
-            
-            {/* Section Graphique et Carte */}
+
+            {/* Section Principale - Graphique et Carte côte à côte */}
             <Grid container spacing={3} sx={{ mt: 2 }}>
+              {/* Graphique d'évolution de la moyenne */}
               <Grid item xs={12} md={8}>
-                <ProgressionMoyenne />
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Évolution de la moyenne
+                    </Typography>
+                    <ProgressionMoyenne />
+                  </CardContent>
+                </Card>
               </Grid>
+              
+              {/* Carte de la province */}
               <Grid item xs={12} md={4}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Card sx={{ height: '100%' }}>
                   <CardMedia
                     component="img"
-                    sx={{
-                      height: '100%',
-                      objectFit: 'contain',
-                      p: 2
-                    }}
+                    height="300"
                     image="/carte.png"
                     alt="Carte de la province"
+                    sx={{ objectFit: 'cover' }}
                   />
                   <CardContent>
-                    <Typography variant="h6" align="center" color="text.secondary">
+                    <Typography variant="h6" align="center">
                       {province.nom_province}
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
             </Grid>
-            
+
             {/* Section Top 5 des établissements */}
             <Grid container spacing={3} sx={{ mt: 2 }}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Top 5 des établissements
+                    </Typography>
+                    <TopEtablissements anneeScolaire={selectedYear} />
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+            
+            {/* Section Comparaison des communes */}
+            <Grid container spacing={3} sx={{ mt: 2, mb: 4 }}>
               <Grid item xs={12}>
-                <TopEtablissements />
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Comparaison des communes
+                    </Typography>
+                    <ComparaisonCommunes idProvince={province.id_province} />
+                  </CardContent>
+                </Card>
               </Grid>
             </Grid>
         </DashboardContainer>
