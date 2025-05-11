@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaSchool, FaChartLine, FaFileImport, FaCog, FaUser, FaSignOutAlt, FaChartBar, FaFileAlt } from 'react-icons/fa';
+import { FaHome, FaSchool, FaChartLine, FaFileImport, FaCog, FaUser, FaSignOutAlt, FaBars } from 'react-icons/fa';
 import { useTranslation } from '../hooks/useTranslation';
 import './Sidebar.css';
 
@@ -32,76 +32,72 @@ const Sidebar = () => {
 
     const menuItems = [
         {
-            path: '/dashboard',
-            icon: translations.icons?.dashboard === 'FaChartBar' ? <FaChartBar /> : <FaHome />,
-            label: 'common.dashboard'
+            path: '/',
+            icon: <FaHome />,
+            label: 'Tableau de bord'
         },
         {
-            path: '/analyse-commune',
-            icon: translations.icons?.analyseCommune === 'FaChartBar' ? <FaChartBar /> : <FaChartLine />,
-            label: 'analyse.common'
+            path: '/analyse',
+            icon: <FaChartLine />,
+            label: 'Analyse'
         },
         {
-            path: '/analyse-etablissement',
-            icon: translations.icons?.analyseEtablissement === 'FaSchool' ? <FaSchool /> : <FaChartLine />,
-            label: 'analyse.etablissement'
+            path: '/ecoles',
+            icon: <FaSchool />,
+            label: 'Écoles'
         },
         {
             path: '/import-donnees',
-            icon: translations.icons?.importDonnees === 'FaFileImport' ? <FaFileImport /> : <FaFileImport />,
-            label: 'import.title'
+            icon: <FaFileImport />,
+            label: 'Importer'
         },
         {
             path: '/rapports',
-            icon: translations.icons?.rapports === 'FaFileAlt' ? <FaFileAlt /> : <FaFileImport />,
-            label: 'common.rapports'
+            icon: <FaFileImport />,
+            label: 'Rapports'
         },
         {
             path: '/parametres',
-            icon: translations.icons?.parametres === 'FaCog' ? <FaCog /> : <FaCog />,
-            label: 'common.parametres'
+            icon: <FaCog />,
+            label: 'Paramètres'
         }
     ];
 
     return (
         <div className={`sidebar ${isOpen ? 'open' : ''}`} dir={direction}>
-            <div className="logo" onClick={() => setIsOpen(!isOpen)}>
-                <img src="/logo.png" alt="Logo" />
-                <span>{t('common.logo')}</span>
+            <div className="sidebar-header">
+                <button className="toggle-btn" onClick={() => setIsOpen(!isOpen)}>
+                    <FaBars />
+                </button>
+                {isOpen && <h3>School Performances</h3>}
             </div>
             
-            <div className="menu-toggle" onClick={() => setIsOpen(!isOpen)}>
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-
-            <nav className="nav-menu">
+            <nav className="sidebar-nav">
                 {menuItems.map((item, index) => (
-                    <Link key={index} to={item.path} className="menu-item">
-                        <div className="icon-container">
-                            {item.icon}
-                        </div>
-                        <span className="menu-label">{t(item.label)}</span>
+                    <Link 
+                        key={index}
+                        to={item.path}
+                        className="nav-link"
+                    >
+                        <span className="nav-icon">{item.icon}</span>
+                        {isOpen && <span className="nav-text">{item.label}</span>}
                     </Link>
                 ))}
-
-                <div className="logout-section">
-                    <button 
-                        onClick={() => {
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('user');
-                            window.location.href = '/login';
-                        }} 
-                        className="menu-item logout-button"
-                    >
-                        <div className="icon-container">
-                            <FaSignOutAlt />
-                        </div>
-                        <span className="menu-label">{t('common.deconnexion')}</span>
-                    </button>
-                </div>
             </nav>
+            
+            <div className="sidebar-footer">
+                <button 
+                    className="logout-btn"
+                    onClick={() => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                    }}
+                >
+                    <FaSignOutAlt />
+                    {isOpen && <span>Déconnexion</span>}
+                </button>
+            </div>
         </div>
     );
 };

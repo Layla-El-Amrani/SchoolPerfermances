@@ -1,29 +1,16 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { FaExpandArrowsAlt, FaCompressArrowsAlt, FaSun, FaMoon, FaLanguage, FaBell, FaUserCircle, FaCalendar, FaBars, FaExpand, FaCompress, FaChevronDown } from 'react-icons/fa';
-import { LanguageContext } from '../contexts/LanguageContext';
+import React, { useState, useEffect } from 'react';
+import { FaExpandArrowsAlt, FaCompressArrowsAlt, FaMoon, FaSun, FaLanguage, FaBell, FaUserCircle, FaCalendar } from 'react-icons/fa';
+import { useYear } from '../contexts/YearContext';
 import './Navbar.css';
 
 const Navbar = () => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
-    const [isLanguageOpen, setIsLanguageOpen] = useState(false);
-    const { language, setLanguage } = useContext(LanguageContext);
-
-    const languages = [
-        { code: 'fr', name: 'Français' },
-        { code: 'en', name: 'English' },
-        { code: 'ar', name: 'العربية' }
-    ];
+    const [language, setLanguage] = useState('fr');
     const [notifications, setNotifications] = useState(3);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-    const [selectedYear, setSelectedYear] = useState('2023-2024');
+    const { selectedYear, setSelectedYear, years } = useYear();
 
-    const years = [
-        '2023-2024',
-        '2024-2025',
-        '2025-2026',
-        '2026-2027'
-    ];
 
     // Gestion du mode plein écran
     const handleFullscreen = () => {
@@ -49,7 +36,10 @@ const Navbar = () => {
 
     // Gestion du changement de langue via le bouton
     const toggleLanguage = () => {
-        const newLang = language === 'fr' ? 'en' : 'fr';
+        const languages = ['fr', 'en', 'ar'];
+        const currentIndex = languages.indexOf(language);
+        const nextIndex = (currentIndex + 1) % languages.length;
+        const newLang = languages[nextIndex];
         handleLanguageChange(newLang);
     };
 
@@ -81,50 +71,44 @@ const Navbar = () => {
 
     return (
         <nav className="navbar">
-            <div className="nav-left">
-                <div className="year-selector">
-                    <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-                        {years.map((year) => (
-                            <option key={year} value={year}>
-                                {year}
-                            </option>
-                        ))}
-                    </select>
+            <div className="navbar-actions">
+                <div className="navbar-actions-left">
+                    <div className="year-selector">
+                        <FaCalendar />
+                        <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+                            {years.map((year) => (
+                                <option key={year} value={year}>
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                <div className="navbar-actions-right">
+                    <button className="action-btn" onClick={handleFullscreen}>
+                        {isFullscreen ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />}
+                    </button>
+                    <button className="action-btn" onClick={handleDarkMode}>
+                        {isDarkMode ? <FaSun /> : <FaMoon />}
+                    </button>
+                    <button className="action-btn" onClick={toggleLanguage}>
+                        <FaLanguage />
+                        <span className="language">
+                            {language === 'fr' ? 'FR' : language === 'en' ? 'EN' : 'عربي'}
+                        </span>
+                    </button>
+                    <button className="action-btn" onClick={handleNotifications}>
+                        <FaBell />
+                        <span className="notification-badge">{notifications}</span>
+                    </button>
+                    <button className="action-btn" onClick={handleProfile}>
+                        <FaUserCircle />
+                    </button>
                 </div>
             </div>
 
-            <div className="nav-right">
-                <button className="action-btn" onClick={handleFullscreen}>
-                    {isFullscreen ? <FaCompressArrowsAlt /> : <FaExpandArrowsAlt />}
-                </button>
-                <button className="action-btn" onClick={handleDarkMode}>
-                    {isDarkMode ? <FaSun /> : <FaMoon />}
-                </button>
-                <div className="language-selector">
-                    <button className="language-btn" onClick={() => setIsLanguageOpen(!isLanguageOpen)}>
-                        <FaLanguage />
-                        <span>{language === 'fr' ? 'FR' : language === 'en' ? 'EN' : 'AR'}</span>
-                        <FaChevronDown className="language-arrow" />
-                    </button>
-                    {isLanguageOpen && (
-                        <div className="language-menu">
-                            {languages.map((lang) => (
-                                <button
-                                    key={lang.code}
-                                    className={`language-option ${language === lang.code ? 'active' : ''}`}
-                                    onClick={() => handleLanguageChange(lang.code)}
-                                >
-                                    {lang.name}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <button className="action-btn" onClick={handleNotifications}>
-                    <FaBell />
-                    <span className="notification-badge">{notifications}</span>
-                </button>
-                <div className="notifications-menu" style={{ display: isNotificationsOpen ? 'block' : 'none' }}>
+            {isNotificationsOpen && (
+                <div className="notifications-menu">
                     <div className="notifications-header">
                         <h3>Notifications</h3>
                         <button onClick={markAllRead}>Marquer tout comme lu</button>
@@ -143,10 +127,7 @@ const Navbar = () => {
                         <button onClick={() => window.location.href = '/notifications'}>Voir toutes les notifications</button>
                     </div>
                 </div>
-                <button className="action-btn" onClick={handleProfile}>
-                    <FaUserCircle />
-                </button>
-            </div>
+            )}
         </nav>
     );
 };

@@ -11,6 +11,7 @@
     z-index: 1000;
     box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
     transition: left 0.3s ease;
+    width: calc(100% - var(--sidebar-width, 80px));
 }
 
 [dir="rtl"] .navbar {
@@ -45,12 +46,15 @@
 
 .year-selector {
     flex: 0 0 auto;
+    margin-right: auto; /* Pousse le sélecteur à gauche */
 }
 
 .navbar-actions {
     display: flex;
     align-items: center;
-    gap: 24px;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 20px;
 }
 
 .action-group {
@@ -75,7 +79,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-right: 15px;
 }
 
 .year-selector select {
@@ -114,8 +117,23 @@ body.dark-mode .year-selector select:focus {
 
 .navbar-actions {
     display: flex;
-    gap: 18px;
+    justify-content: space-between;
     align-items: center;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 0 20px;
+}
+
+.navbar-actions-left {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .action-btn {
@@ -123,13 +141,28 @@ body.dark-mode .year-selector select:focus {
     border: none;
     color: #6B7280;
     cursor: pointer;
-    padding: 10px;
-    border-radius: 50%;
+    padding: 8px 12px;
+    border-radius: 8px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    z-index: 1;
+    margin: 0 5px;
+}
+
+.action-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+    color: #6B7280;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.action-btn:hover svg {
+    color: #1D4ED8;
 }
 
 .language-selector {
@@ -202,8 +235,13 @@ body.dark-mode .year-selector select:focus {
 }
 
 .action-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    color: #6B7280;
+}
+
+.action-btn:hover svg {
+    color: #1D4ED8;
 }
 
 .action-btn:hover {

@@ -12,6 +12,8 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Navbar from './components/Navbar';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { YearProvider } from './contexts/YearContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 // Composant pour protéger les routes
@@ -23,27 +25,41 @@ function App() {
   return (
     <Router>
       <LanguageProvider>
-        <div className="app-container">
-          <Routes>
-            {/* Routes publiques */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<PrivateRoute>
-              <>
-                <Navbar />
-                <DashboardLayout />
-              </>
-            </PrivateRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="analyse-commune" element={<AnalyseCommune />} />
-              <Route path="analyse-etablissement" element={<AnalyseEtablissement />} />
-              <Route path="import-donnees" element={<ImportDonnees />} />
-              <Route path="rapports" element={<Rapports />} />
-              <Route path="parametres" element={<Parametres />} />
-            </Route>
-            {/* Route 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
+        <YearProvider>
+          <div className="app-container">
+            <Routes>
+              {/* Routes publiques */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/*" element={<PrivateRoute>
+                <>
+                  <Navbar />
+                  <div className="content" style={{
+                    marginLeft: '250px',
+                    marginTop: '64px',
+                    padding: '20px',
+                    backgroundColor: '#f5f5f5',
+                    minHeight: '100vh'
+                  }}>
+                    <ErrorBoundary>
+                      <DashboardLayout>
+                        <Routes>
+                          <Route index element={<Dashboard />} />
+                          <Route path="analyse-commune" element={<AnalyseCommune />} />
+                          <Route path="analyse-etablissement" element={<AnalyseEtablissement />} />
+                          <Route path="import-donnees" element={<ImportDonnees />} />
+                          <Route path="rapports" element={<Rapports />} />
+                          <Route path="parametres" element={<Parametres />} />
+                        </Routes>
+                      </DashboardLayout>
+                    </ErrorBoundary>
+                  </div>
+                </>
+              </PrivateRoute>} />
+              {/* Route 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </YearProvider>
       </LanguageProvider>
     </Router>
   );
