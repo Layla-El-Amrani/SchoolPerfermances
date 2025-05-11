@@ -32,7 +32,7 @@ api.interceptors.response.use(
 // Exporter les endpoints de l'API
 export const apiEndpoints = {
     // Statistiques Province
-    statsProvince: (annee) => `/province/stats${annee ? '/' + annee : ''}`,
+    statsProvince: () => '/province/stats',
     evolutionProvince: '/province/evolution',
     topEtablissements: (annee) => `/province/top-etablissements/${annee}`,
     statsParCycle: (annee) => `/province/cycles/${annee}`,

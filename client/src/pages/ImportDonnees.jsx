@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { api, protectedApi } from '../services/api';
+import { useYear } from '../contexts/YearContext';
 import {
   Box,
   Button,
@@ -55,36 +56,7 @@ import { styled, useTheme, alpha } from '@mui/material/styles';
 import * as XLSX from 'xlsx';
 import { useDropzone } from 'react-dropzone';
 
-// Création d'une instance Axios personnalisée
-const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
-  withCredentials: true,
-  headers: {
-    'X-Requested-With': 'XMLHttpRequest',
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  }
-});
-
-// Intercepteur pour ajouter le token
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, error => {
-  return Promise.reject(error);
-});
-
-// Intercepteur pour gérer les erreurs d'authentification
-api.interceptors.response.use(response => response, error => {
-  if (error.response && error.response.status === 401) {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-  }
-  return Promise.reject(error);
-});
+// Utilisation de l'instance api partagée depuis services/api.js
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -135,8 +107,7 @@ function ImportDonnees({ annee }) {
   const theme = useTheme();
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
-  const [annees, setAnnees] = useState([]);
-  const [selectedAnnee, setSelectedAnnee] = useState('');
+  const { selectedYear, years, setSelectedYear } = useYear();
   const [open, setOpen] = useState(false);
   const [nouvelleAnnee, setNouvelleAnnee] = useState('');
   const [error, setError] = useState('');
@@ -145,33 +116,8 @@ function ImportDonnees({ annee }) {
   const [historique, setHistorique] = useState([]);
   const [previewData, setPreviewData] = useState([]);
 
+  // Charger l'historique
   useEffect(() => {
-    // Charger les années scolaires
-    api.get('/dashboard/annee-scolaires')
-      .then(response => {
-        const data = response.data;
-        const anneesList = Array.isArray(data) ? data : (data.data || []);
-        setAnnees(anneesList);
-        
-        // Si une année est passée en prop, vérifier qu'elle existe dans la liste
-        if (annee) {
-          const anneeExists = anneesList.some(a => a.annee_scolaire === annee);
-          if (anneeExists) {
-            setSelectedAnnee(annee);
-          } else if (anneesList.length > 0) {
-            setSelectedAnnee(anneesList[0].annee_scolaire);
-          }
-        } else if (anneesList.length > 0) {
-          setSelectedAnnee(anneesList[0].annee_scolaire);
-        }
-      })
-      .catch(error => {
-        console.error('Erreur lors du chargement des années:', error);
-        setAnnees([]);
-        setError('Erreur lors du chargement des années scolaires');
-      });
-
-    // Charger l'historique
     api.get('/dashboard/import/history')
       .then(response => {
         setHistorique(response.data);
@@ -180,7 +126,7 @@ function ImportDonnees({ annee }) {
         console.error('Erreur lors du chargement de l\'historique:', error);
         setHistorique([]);
       });
-  }, [annee]);
+  }, []);
 
   const onDrop = useCallback(acceptedFiles => {
     if (acceptedFiles.length > 0) {
@@ -272,9 +218,9 @@ function ImportDonnees({ annee }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('annee', selectedAnnee);
+      formData.append('annee', selectedYear);
 
-const response = await api.post('/dashboard/import/resultats', formData, {
+      const response = await api.post('/dashboard/import/resultats', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Accept': 'application/json'
@@ -291,7 +237,7 @@ const response = await api.post('/dashboard/import/resultats', formData, {
         {
           date: new Date().toISOString(),
           utilisateur: 'Utilisateur actuel',
-          annee: selectedAnnee,
+          annee: selectedYear,
           fichier: file.name,
           lignes: response.data.lignes_importees || 0,
           statut: 'Réussi',
@@ -446,8 +392,8 @@ const response = await api.post('/dashboard/import/resultats', formData, {
                   <FormControl fullWidth>
                     <InputLabel>Année scolaire</InputLabel>
                     <Select
-                      value={selectedAnnee}
-                      onChange={(e) => setSelectedAnnee(e.target.value)}
+                      value={selectedYear || ''}
+                      onChange={(e) => setSelectedYear(e.target.value)}
                       label="Année scolaire"
                       sx={{ 
                         '& .MuiOutlinedInput-notchedOutline': {
@@ -458,9 +404,9 @@ const response = await api.post('/dashboard/import/resultats', formData, {
                         },
                       }}
                     >
-                      {annees.map((annee) => (
-                        <MenuItem key={annee.id} value={annee.annee_scolaire}>
-                          {annee.annee_scolaire}
+                      {years && years.map((year) => (
+                        <MenuItem key={year} value={year}>
+                          {year}
                         </MenuItem>
                       ))}
                     </Select>
@@ -547,7 +493,7 @@ const response = await api.post('/dashboard/import/resultats', formData, {
                   variant="contained"
                   color="primary"
                   onClick={handleImport}
-                  disabled={!file || !selectedAnnee || loading}
+                  disabled={!file || !selectedYear || loading}
                   startIcon={loading ? <CircularProgress size={20} /> : <CloudUpload />}
                   sx={{ 
                     mt: 2, 
