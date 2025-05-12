@@ -423,28 +423,18 @@ const AnalyseCommune = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 0, pt: 0, '& > * + *': { mt: 1 } }}>
-      <Typography component="h1" sx={{ 
-        fontWeight: 'normal', 
-        mb: 1.5,
-        fontSize: '1.1rem',
-        color: 'text.secondary'
-      }}>
+    <Container maxWidth="xl" sx={{ py: 0, pt: 0 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
         Analyse par Commune
       </Typography>
       
       {/* Sélecteur de commune */}
-      <Paper elevation={1} sx={{ p: 1 }}>
-        <Typography variant="subtitle2" sx={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          mb: 1,
-          color: 'text.secondary'
-        }}>
-          <LocationOn color="primary" sx={{ mr: 1, fontSize: '1rem' }} />
+      <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+          <LocationOn color="primary" sx={{ mr: 1 }} />
           Sélectionnez une commune
         </Typography>
-        <FormControl fullWidth size="small">
+        <FormControl fullWidth>
           <InputLabel id="commune-select-label">Commune</InputLabel>
           <Select
             labelId="commune-select-label"
@@ -452,19 +442,6 @@ const AnalyseCommune = () => {
             onChange={handleCommuneChange}
             label="Commune"
             disabled={isLoading.communes}
-            size="small"
-            sx={{
-              '& .MuiSelect-select': {
-                padding: '8px 12px',
-                fontSize: '0.875rem'
-              },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'divider'
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.main'
-              }
-            }}
           >
             {communes.map((commune) => (
               <MenuItem key={commune.id} value={commune.id}>
@@ -479,7 +456,7 @@ const AnalyseCommune = () => {
         <>
           {/* Cartes de statistiques */}
           {statsCommune && selectedCommuneData && (
-              <Grid container spacing={1}>
+              <Grid container spacing={3} sx={{ mb: 3 }}>
                 <CommuneStatsCards 
                   selectedCommuneData={selectedCommuneData} 
                   statsCommune={statsCommune} 
@@ -488,77 +465,47 @@ const AnalyseCommune = () => {
             )}
 
             {/* Carte et répartition par cycle */}
-            <Grid container spacing={1} sx={{ display: 'flex', alignItems: 'stretch' }}>
-              <Grid item xs={12} md={5}>
-                <Paper elevation={1} sx={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid item xs={12} md={6}>
+                <CommuneMap
+                  selectedCommune={selectedCommune}
+                  statsCommune={selectedCommuneData}
+                  getCommuneMapPath={getCommuneMapPath}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Paper elevation={1} sx={{ p: 3, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                     <Typography variant="h6">
-                      Répartition des établissements par cycle d'enseignement
+                      Répartition des établissements par cycle
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', flex: 1, gap: 2 }}>
-                    <Box sx={{ flex: 1, minHeight: '300px' }}>
-                      <CyclesPieChart
-                        cyclesData={cyclesData}
-                        cyclesOptions={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              position: 'right',
-                              labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'rectRounded'
-                              }
-                            },
-                            title: {
-                              display: false
-                            }
-                          }
-                        }}
-                      />
-                    </Box>
-                    <Box sx={{ width: '250px', p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>Légende des cycles :</Typography>
-                      <Box component="ul" sx={{ pl: 2, m: 0, listStyle: 'none' }}>
-                        <Box component="li" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ width: 12, height: 12, bgcolor: '#FF6384', mr: 1, borderRadius: '2px' }} />
-                          <Typography variant="body2">Cycle Primaire</Typography>
-                        </Box>
-                        <Box component="li" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ width: 12, height: 12, bgcolor: '#36A2EB', mr: 1, borderRadius: '2px' }} />
-                          <Typography variant="body2">Cycle Collégial</Typography>
-                        </Box>
-                        <Box component="li" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ width: 12, height: 12, bgcolor: '#FFCE56', mr: 1, borderRadius: '2px' }} />
-                          <Typography variant="body2">Cycle Secondaire</Typography>
-                        </Box>
-                        <Box component="li" sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ width: 12, height: 12, bgcolor: '#4BC0C0', mr: 1, borderRadius: '2px' }} />
-                          <Typography variant="body2">Cycle Qualifiant</Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} md={7}>
-                <Paper elevation={1} sx={{ p: 1, height: '100%' }}>
-                  <CommuneMap
-                    selectedCommune={selectedCommune}
-                    statsCommune={selectedCommuneData}
-                    getCommuneMapPath={getCommuneMapPath}
+                  <CyclesPieChart
+                    cyclesData={cyclesData}
+                    cyclesOptions={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'right',
+                        },
+                        title: {
+                          display: true,
+                          text: 'Répartition des établissements par cycle',
+                          font: { size: 16 }
+                        }
+                      }
+                    }}
                   />
                 </Paper>
               </Grid>
             </Grid>
 
             {/* Graphiques d'évolution */}
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid container spacing={3}>
               <Grid item xs={12}>
-                <Paper elevation={1} sx={{ p: 1, borderRadius: 2, height: '100%', width: '100%' }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                <Paper elevation={1} sx={{ p: 3, borderRadius: 2, mb: 3 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                     <Typography variant="h6">
                       {chartType === 'moyenne' ? 'Moyenne par Cycle' : 'Taux de Réussite par Cycle'}
                     </Typography>
@@ -576,19 +523,19 @@ const AnalyseCommune = () => {
                   </Box>
                   
                   {isLoading.cycles ? (
-                    <Box sx={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                    <Box sx={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <CircularProgress />
                     </Box>
-                  ) : cyclesData && cyclesData.labels && cyclesData.labels.length > 0 && cyclesData.datasets && cyclesData.datasets[0] ? (
-                    <Box sx={{ height: '400px', position: 'relative', width: '100%' }}>
+                  ) : cyclesData && cyclesData.labels && cyclesData.labels.length > 0 ? (
+                    <Box sx={{ height: '400px', position: 'relative' }}>
                       <Bar 
                         data={{
                           labels: cyclesData.labels,
                           datasets: [{
                             label: chartType === 'moyenne' ? 'Moyenne /20' : 'Taux de Réussite %',
-                            data: cyclesData.datasets[0]?.data || [],
-                            backgroundColor: cyclesData.datasets[0]?.backgroundColor || 'rgba(54, 162, 235, 0.7)',
-                            borderColor: cyclesData.datasets[0]?.borderColor || 'rgba(54, 162, 235, 1)',
+                            data: cyclesData.datasets[0].data,
+                            backgroundColor: cyclesData.datasets[0].backgroundColor,
+                            borderColor: cyclesData.datasets[0].borderColor,
                             borderWidth: 1
                           }]
                         }}
@@ -624,8 +571,8 @@ const AnalyseCommune = () => {
               </Grid>
 
               <Grid item xs={12}>
-                <Paper elevation={1} sx={{ p: 1, borderRadius: 2, height: '100%', width: '100%' }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                <Paper elevation={1} sx={{ p: 3, borderRadius: 2, mb: 3 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                     <Typography variant="h6">
                       {chartType === 'moyenne'
                         ? 'Évolution des Moyennes'
@@ -645,7 +592,7 @@ const AnalyseCommune = () => {
                   </Box>
                   
                   {chartType === 'moyenne' ? (
-                    <Box sx={{ height: '400px', position: 'relative', width: '100%' }}>
+                    <Box sx={{ height: '400px', position: 'relative' }}>
                       {evolutionData.moyennes && evolutionData.moyennes.labels && evolutionData.moyennes.labels.length > 0 ? (
                         <Line
                           data={evolutionData.moyennes}

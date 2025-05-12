@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import PageLoader from '../../PageLoader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import api from '../../../services/api';
 import { apiEndpoints } from '../../../services/api';
@@ -72,10 +73,9 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" my={4}>
-        <CircularProgress />
-        <Typography variant="body1" ml={2}>Chargement des données des niveaux...</Typography>
-      </Box>
+      <PageLoader isLoading={true}>
+        <Typography variant="body1">Chargement des données des niveaux...</Typography>
+      </PageLoader>
     );
   }
 

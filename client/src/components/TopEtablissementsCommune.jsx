@@ -101,7 +101,7 @@ const TopEtablissementsCommune = ({ communeId, anneeScolaire }) => {
 
 
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, boxSizing: 'border-box' }}>
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, boxSizing: 'border-box' }}>
       <Box mb={2} sx={{ flexShrink: 0 }}>
         <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
           Top 3 des établissements de la commune
@@ -114,8 +114,8 @@ const TopEtablissementsCommune = ({ communeId, anneeScolaire }) => {
       </Box>
       
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <TableContainer sx={{ flex: 1, overflow: 'auto', minHeight: '100%' }}>
-          <Table size="small" stickyHeader>
+        <TableContainer sx={{ flex: 1, overflow: 'auto', minHeight: '100%', width: '100%' }}>
+          <Table size="small" stickyHeader sx={{ width: '100%' }}>
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 'bold', width: '50px' }}>#</TableCell>

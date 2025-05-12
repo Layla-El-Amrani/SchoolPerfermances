@@ -4,44 +4,39 @@ import {
   Grid, 
   Box, 
   Typography, 
+  TextField, 
+  Autocomplete, 
+  Button, 
   Card, 
   CardContent, 
   Divider, 
-  CircularProgress,
-  Paper,
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  FormHelperText, 
+  Paper, 
+  IconButton, 
+  TableHead,
+  TableRow,
+  TablePagination,
+  TableContainer,
+  Table,
+  TableBody,
+  TableCell,
   Avatar,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Chip,
-  styled,
   Tabs,
   Tab,
   useTheme,
-  TextField,
   InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  IconButton,
-  Tooltip,
-  Button,
-  MenuItem,
-  InputLabel,
-  Select,
-  FormControl,
-  FormHelperText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText
+  CircularProgress
 } from '@mui/material';
+import PageLoader from '../components/PageLoader';
 import { useYear } from '../contexts/YearContext';
 import StatCard from '../components/StatCard';
 import { apiEndpoints } from '../services/api';
@@ -310,19 +305,16 @@ const AnalyseEtablissement = () => {
       )}
 
       {loading.stats && (
-        <Box display="flex" justifyContent="center" my={4}>
-          <CircularProgress />
-        </Box>
+        <PageLoader isLoading={true}>
+          <Typography variant="body1">Chargement des données de l'établissement...</Typography>
+        </PageLoader>
       )}
 
       {selectedEtablissementData && (
-        <Box sx={{ width: '100%', mt: 2, maxWidth: '100%', overflowX: 'auto' }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ width: '100%' }}>
-                <Grid container spacing={3} sx={{ display: 'flex', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
+        <Box sx={{ width: '100%', mt: 2, maxWidth: '100%' }}>
+          <Grid container spacing={1} sx={{ display: 'flex', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
                   {/* Première rangée */}
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Établissement"
                       value={selectedEtablissementData.nom_etab_fr || selectedEtablissementData.nom_etab_ar || 'Non spécifié'}
@@ -333,7 +325,7 @@ const AnalyseEtablissement = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Commune"
                       value={selectedEtablissementData.commune?.nom || 
@@ -345,7 +337,7 @@ const AnalyseEtablissement = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Cycle éducatif"
                       value={selectedEtablissementData.cycle || 'Non spécifié'}
@@ -356,7 +348,7 @@ const AnalyseEtablissement = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Nombre d'élèves"
                       value={statsEtablissement?.statistiques?.nombre_eleves !== undefined ? 
@@ -369,7 +361,7 @@ const AnalyseEtablissement = () => {
                   </Grid>
 
                   {/* Deuxième rangée */}
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Classement Province"
                       value={statsEtablissement?.statistiques?.rang_province ? 
@@ -381,7 +373,7 @@ const AnalyseEtablissement = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Classement Commune"
                       value={statsEtablissement?.statistiques?.rang_commune ? 
@@ -393,7 +385,7 @@ const AnalyseEtablissement = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Moyenne Générale"
                       value={statsEtablissement?.statistiques?.moyenne_generale?.toFixed(2) || 'N/A'}
@@ -403,7 +395,7 @@ const AnalyseEtablissement = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 12px)', marginBottom: '16px' }}>
                     <StatCard 
                       title="Taux de Réussite"
                       value={statsEtablissement?.statistiques?.taux_reussite ? 
@@ -413,8 +405,7 @@ const AnalyseEtablissement = () => {
                       sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
                     />
                   </Grid>
-                </Grid>
-              </Box>
+              </Grid>
 
               {/* Onglets d'analyse */}
               <Box sx={{ width: '100%', mt: 3 }}>
@@ -424,6 +415,7 @@ const AnalyseEtablissement = () => {
                   variant="fullWidth"
                   indicatorColor="primary"
                   textColor="primary"
+                  sx={{ mt: 2 }}
                 >
                   <Tab icon={<TimelineIcon />} label="Par Niveau" />
                   <Tab icon={<SchoolIcon />} label="Par Matière" />
@@ -436,8 +428,6 @@ const AnalyseEtablissement = () => {
                   {activeTab === 2 && <ComparaisonAnnuelle etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
                 </Box>
               </Box>
-            </CardContent>
-          </Card>
         </Box>
       )}
     </PageContainer>
