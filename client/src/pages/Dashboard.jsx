@@ -59,21 +59,21 @@ const StatsGrid = styled(Grid)(({ theme }) => ({
       [theme.breakpoints.between('sm', 'md')]: {
         width: 'calc(50% - 20px)',
         margin: theme.spacing(0, 2, 3, 0),
-        '&:nth-child(2n)': {
+        '&:nth-of-type(2n)': {
           marginRight: 0,
         },
       },
       [theme.breakpoints.between('md', 'xl')]: {
         width: 'calc(33.333% - 16px)',
         margin: theme.spacing(0, 2, 3, 0),
-        '&:nth-child(3n)': {
+        '&:nth-of-type(3n)': {
           marginRight: 0,
         }
       },
       [theme.breakpoints.up('xl')]: {
         width: 'calc(20% - 17px)',
         margin: theme.spacing(0, 2, 3, 0),
-        '&:nth-child(5n)': {
+        '&:nth-of-type(5n)': {
           marginRight: 0,
         }
       }

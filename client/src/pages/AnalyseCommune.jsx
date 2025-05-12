@@ -309,17 +309,39 @@ const AnalyseCommune = () => {
         const moyenneData = data.map(item => parseFloat(item.moyenne_generale || 0));
         const tauxReussiteData = data.map(item => parseFloat(item.taux_reussite || 0));
         
-        setCyclesData(prev => ({
-          ...prev,
-          labels,
-          datasets: [
-            {
-              ...prev.datasets[0],
-              data: chartType === 'moyenne' ? moyenneData : tauxReussiteData,
-              label: chartType === 'moyenne' ? 'Moyenne /20' : 'Taux de Réussite %',
-            }
-          ]
-        }));
+        setCyclesData(prev => {
+          const defaultDataset = {
+            data: [],
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.7)',
+              'rgba(54, 162, 235, 0.7)',
+              'rgba(255, 206, 86, 0.7)',
+              'rgba(75, 192, 192, 0.7)',
+              'rgba(153, 102, 255, 0.7)',
+            ],
+            borderColor: [
+              'rgba(255, 99, 132, 1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 206, 86, 1)',
+              'rgba(75, 192, 192, 1)',
+              'rgba(153, 102, 255, 1)',
+            ],
+            borderWidth: 1,
+          };
+
+          return {
+            ...prev,
+            labels,
+            datasets: [
+              {
+                ...defaultDataset,
+                ...(prev?.datasets?.[0] || {}),
+                data: chartType === 'moyenne' ? (moyenneData || []) : (tauxReussiteData || []),
+                label: chartType === 'moyenne' ? 'Moyenne /20' : 'Taux de Réussite %',
+              }
+            ]
+          };
+        });
       } else {
         setCyclesData({
           labels: [],

@@ -17,6 +17,7 @@ import {
   FormHelperText, 
   Paper, 
   IconButton, 
+  styled,
   TableHead,
   TableRow,
   TablePagination,
@@ -78,9 +79,14 @@ const AnalyseEtablissement = () => {
   const [statsEtablissement, setStatsEtablissement] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState({
-    etablissement: true,
-    stats: true,
-    communes: true
+    etablissement: false,
+    stats: false,
+    communes: false
+  });
+  const [loadingError, setLoadingError] = useState({
+    etablissement: false,
+    stats: false,
+    communes: false
   });
   const [activeTab, setActiveTab] = useState(0);
 
@@ -98,9 +104,20 @@ const AnalyseEtablissement = () => {
   // Charger les communes
   useEffect(() => {
     const fetchCommunes = async () => {
+      setLoading(prev => ({ ...prev, communes: true }));
+      setLoadingError(prev => ({ ...prev, communes: false }));
+      
+      const timeoutId = setTimeout(() => {
+        if (loading.communes) {
+          setLoading(prev => ({ ...prev, communes: false }));
+          setLoadingError(prev => ({ ...prev, communes: true }));
+          setError('Le chargement des communes a pris trop de temps. Veuillez réessayer.');
+        }
+      }, 10000); // Timeout après 10 secondes
+
       try {
-        setLoading(prev => ({ ...prev, communes: true }));
         const response = await api.get(apiEndpoints.getCommunes);
+        clearTimeout(timeoutId);
         
         if (response.data && response.data.communes) {
           const formattedCommunes = response.data.communes.map(commune => ({
@@ -110,7 +127,9 @@ const AnalyseEtablissement = () => {
           setCommunes(formattedCommunes);
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         setError('Erreur lors du chargement des communes');
+        setLoadingError(prev => ({ ...prev, communes: true }));
         console.error('Erreur:', err);
       } finally {
         setLoading(prev => ({ ...prev, communes: false }));
@@ -129,11 +148,21 @@ const AnalyseEtablissement = () => {
         return;
       }
 
+      setLoading(prev => ({ ...prev, etablissements: true }));
+      setLoadingError(prev => ({ ...prev, etablissements: false }));
+      
+      const timeoutId = setTimeout(() => {
+        if (loading.etablissements) {
+          setLoading(prev => ({ ...prev, etablissements: false }));
+          setLoadingError(prev => ({ ...prev, etablissements: true }));
+          setError('Le chargement des établissements a pris trop de temps. Veuillez réessayer.');
+        }
+      }, 10000); // Timeout après 10 secondes
+
       try {
-        setLoading(prev => ({ ...prev, etablissements: true }));
-        
         // Récupérer les établissements de la commune sélectionnée
         const response = await api.get(`/etablissement/commune/${selectedCommune}`);
+        clearTimeout(timeoutId);
         
         if (response.data && response.data.success) {
           const formattedEtablissements = response.data.data.map(etab => ({
@@ -143,7 +172,9 @@ const AnalyseEtablissement = () => {
           setEtablissements(formattedEtablissements);
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         setError('Erreur lors du chargement des établissements');
+        setLoadingError(prev => ({ ...prev, etablissements: true }));
         console.error('Erreur:', err);
       } finally {
         setLoading(prev => ({ ...prev, etablissements: false }));
@@ -158,14 +189,25 @@ const AnalyseEtablissement = () => {
     const fetchStats = async () => {
       if (!selectedEtablissement || !selectedYear) return;
 
+      setLoading(prev => ({ ...prev, stats: true }));
+      setLoadingError(prev => ({ ...prev, stats: false }));
+      
+      const timeoutId = setTimeout(() => {
+        if (loading.stats) {
+          setLoading(prev => ({ ...prev, stats: false }));
+          setLoadingError(prev => ({ ...prev, stats: true }));
+          setError('Le chargement des statistiques a pris trop de temps. Veuillez réessayer.');
+        }
+      }, 15000); // Timeout après 15 secondes
+
       try {
-        setLoading(prev => ({ ...prev, stats: true }));
-        
         // Récupérer les statistiques et les données de l'établissement
         const [statsResponse, etablissementResponse] = await Promise.all([
           api.get(apiEndpoints.statEtablissement(selectedEtablissement, selectedYear)),
           api.get(`/etablissement/${selectedEtablissement}`)
         ]);
+        
+        clearTimeout(timeoutId);
         
         console.log('Réponse des statistiques:', statsResponse.data);
         console.log('Réponse des données de l\'établissement:', etablissementResponse.data);
@@ -179,7 +221,9 @@ const AnalyseEtablissement = () => {
           setSelectedEtablissementData(etablissementResponse.data.data || etablissementResponse.data);
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         setError('Erreur lors du chargement des statistiques');
+        setLoadingError(prev => ({ ...prev, stats: true }));
         console.error('Erreur:', err);
       } finally {
         setLoading(prev => ({ ...prev, stats: false }));
@@ -304,10 +348,59 @@ const AnalyseEtablissement = () => {
         </Box>
       )}
 
-      {loading.stats && (
-        <PageLoader isLoading={true}>
-          <Typography variant="body1">Chargement des données de l'établissement...</Typography>
-        </PageLoader>
+      {(loading.communes || loading.etablissements || loading.stats) && (
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          minHeight: '300px',
+          textAlign: 'center',
+          p: 3
+        }}>
+          {loadingError.communes || loadingError.etablissements || loadingError.stats ? (
+            <Box>
+              <Typography variant="h6" color="error" gutterBottom>
+                Erreur de chargement
+              </Typography>
+              <Typography variant="body1" color="textSecondary" paragraph>
+                Impossible de charger les données. Veuillez vérifier votre connexion et réessayer.
+              </Typography>
+              <Button 
+                variant="contained" 
+                color="primary"
+                onClick={() => {
+                  // Réinitialiser les états d'erreur
+                  setLoadingError({
+                    communes: false,
+                    etablissements: false,
+                    stats: false
+                  });
+                  // Recharger les données
+                  setSelectedCommune(prev => {
+                    if (prev) {
+                      const temp = prev;
+                      setSelectedCommune('');
+                      return temp;
+                    }
+                    return prev;
+                  });
+                }}
+              >
+                Réessayer
+              </Button>
+            </Box>
+          ) : (
+            <>
+              <CircularProgress size={60} thickness={4} color="primary" />
+              <Typography variant="body1" mt={2}>
+                {loading.communes ? 'Chargement des communes...' : 
+                 loading.etablissements ? 'Chargement des établissements...' : 
+                 'Chargement des données de l\'établissement...'}
+              </Typography>
+            </>
+          )}
+        </Box>
       )}
 
       {selectedEtablissementData && (
