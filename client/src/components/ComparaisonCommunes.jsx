@@ -3,12 +3,9 @@ import {
   Box, 
   Typography, 
   Paper, 
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   useTheme
 } from '@mui/material';
+import { useYear } from '../contexts/YearContext';
 import EducationLoading from './EducationLoading';
 import { Bar } from 'react-chartjs-2';
 import { api, apiEndpoints } from '../services/api';
@@ -36,54 +33,29 @@ const ComparaisonCommunes = ({ idProvince }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [anneeScolaire, setAnneeScolaire] = useState('2023-2024');
-  const [anneesScolaires, setAnneesScolaires] = useState([]);
   const theme = useTheme();
-
-  // Charger les années scolaires disponibles
-  useEffect(() => {
-    const fetchAnneesScolaires = async () => {
-      try {
-        const response = await api.get(apiEndpoints.getAnneesScolaires);
-        if (response.data?.success) {
-          setAnneesScolaires(response.data.data || []);
-          // Sélectionner l'année courante par défaut
-          const anneeCourante = response.data.data.find(a => a.est_courante);
-          if (anneeCourante) {
-            setAnneeScolaire(anneeCourante.annee_scolaire);
-          }
-        }
-      } catch (err) {
-        console.error('Erreur lors du chargement des années scolaires:', err);
-      }
-    };
-
-    fetchAnneesScolaires();
-  }, []);
+  const { selectedYear } = useYear();
 
   // Charger les données de comparaison des communes
   useEffect(() => {
     const fetchData = async () => {
-      if (!idProvince || !anneeScolaire) return;
+      if (!idProvince || !selectedYear) return;
       
       try {
         setLoading(true);
         setError(null);
         
-        console.log(`Récupération des données pour la province ${idProvince}, année ${anneeScolaire}`);
+        console.log(`Récupération des données pour la province ${idProvince}, année ${selectedYear}`);
         const response = await api.get(
-          apiEndpoints.comparaisonCommunes(idProvince, anneeScolaire),
-          { params: { annee_scolaire: anneeScolaire } }
+          apiEndpoints.comparaisonCommunes(idProvince, selectedYear),
+          { params: { annee_scolaire: selectedYear } }
         );
         
         console.log('Réponse de l\'API:', response.data);
         
         if (response.data?.success) {
-          // S'assurer que data est un tableau
-          const responseData = Array.isArray(response.data.data) 
-            ? response.data.data 
-            : [];
-            
+          // La réponse contient un objet avec une propriété 'communes' qui est un tableau
+          const responseData = response.data.data?.communes || [];
           console.log('Données formatées:', responseData);
           setData(responseData);
         } else {
@@ -99,11 +71,7 @@ const ComparaisonCommunes = ({ idProvince }) => {
     };
 
     fetchData();
-  }, [idProvince, anneeScolaire]);
-
-  const handleAnneeChange = (event) => {
-    setAnneeScolaire(event.target.value);
-  };
+  }, [idProvince, selectedYear]);
 
   // Préparer les données pour le graphique
   const chartData = {
@@ -220,26 +188,13 @@ const ComparaisonCommunes = ({ idProvince }) => {
 
   return (
     <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box mb={3}>
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           Comparaison des communes
         </Typography>
-        
-        <FormControl variant="outlined" size="small" sx={{ minWidth: 180 }}>
-          <InputLabel id="annee-scolaire-label">Année scolaire</InputLabel>
-          <Select
-            labelId="annee-scolaire-label"
-            value={anneeScolaire}
-            onChange={handleAnneeChange}
-            label="Année scolaire"
-          >
-            {anneesScolaires.map((annee) => (
-              <MenuItem key={annee.annee_scolaire} value={annee.annee_scolaire}>
-                {annee.annee_scolaire}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Typography variant="body2" color="text.secondary">
+          Année scolaire: {selectedYear}
+        </Typography>
       </Box>
       
       <Box sx={{ height: '400px', position: 'relative' }}>

@@ -30,37 +30,99 @@ const stringToColor = (string) => {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
+// Définition des couleurs avec des tons jaune, vert et orange
+const cycleColors = {
+  'PRIMAIRE': {
+    backgroundColor: '#FFD54F', // Jaune vif
+    textColor: '#E65100',
+    hoverColor: '#FFC107'
+  },
+  'COLLEGE': {
+    backgroundColor: '#81C784', // Vert clair
+    textColor: '#1B5E20',
+    hoverColor: '#66BB6A'
+  },
+  'LYCEE': {
+    backgroundColor: '#FFB74D', // Orange clair
+    textColor: '#E65100',
+    hoverColor: '#FFA726'
+  },
+  'LYCÉE': {
+    backgroundColor: '#FFB74D', // Orange clair (avec accent)
+    textColor: '#E65100',
+    hoverColor: '#FFA726'
+  },
+  'SECONDAIRE': {
+    backgroundColor: '#FFF176', // Jaune pâle
+    textColor: '#F57F17',
+    hoverColor: '#FFEE58'
+  },
+  'QUALIFIANT': {
+    backgroundColor: '#A5D6A7', // Vert très clair
+    textColor: '#2E7D32',
+    hoverColor: '#81C784'
+  },
+  'QUALIFICATION': {
+    backgroundColor: '#A5D6A7', // Vert très clair (variante)
+    textColor: '#2E7D32',
+    hoverColor: '#81C784'
+  },
+  'TECHNIQUE': {
+    backgroundColor: '#FFCC80', // Orange pâle
+    textColor: '#E65100',
+    hoverColor: '#FFB74D'
+  },
+  'PROFESSIONNEL': {
+    backgroundColor: '#FFE082', // Jaune doré
+    textColor: '#E65100',
+    hoverColor: '#FFD54F'
+  },
+  'DEFAULT': {
+    backgroundColor: '#E0E0E0', // Gris clair
+    textColor: '#424242',
+    hoverColor: '#BDBDBD'
+  }
+};
+
 // Styles pour les puces de cycle
 const CycleChip = styled(Chip)(({ theme, cycle = '' }) => {
-  const upperCycle = cycle.toUpperCase();
+  const upperCycle = cycle.toUpperCase().trim();
   
-  // Couleurs spécifiques pour les cycles connus
-  const specificColors = {
-    'PRIMAIRE': theme.palette.primary.main,
-    'COLLEGE': theme.palette.secondary.main,
-    'LYCEE': theme.palette.success.main,
-    'SECONDAIRE': theme.palette.warning.main,
-    'QUALIFIANT': theme.palette.info.main,
-  };
+  // Trouver la configuration de couleur pour ce cycle
+  const colorConfig = cycleColors[upperCycle] || cycleColors['DEFAULT'];
   
-  // Utiliser la couleur spécifique ou en générer une à partir du nom
-  const backgroundColor = specificColors[upperCycle] || stringToColor(upperCycle);
-  
-  // Vérifier la luminosité pour décider de la couleur du texte
-  const r = parseInt(backgroundColor.substring(1, 3), 16);
-  const g = parseInt(backgroundColor.substring(3, 5), 16);
-  const b = parseInt(backgroundColor.substring(5, 7), 16);
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  const textColor = brightness > 128 ? '#000000' : '#FFFFFF';
+  // Si le cycle contient des mots-clés connus, utiliser la couleur correspondante
+  if (!cycleColors[upperCycle]) {
+    const cycleKeys = Object.keys(cycleColors);
+    for (const key of cycleKeys) {
+      if (key !== 'DEFAULT' && upperCycle.includes(key)) {
+        Object.assign(colorConfig, cycleColors[key]);
+        break;
+      }
+    }
+  }
 
   return {
-    backgroundColor,
-    color: textColor,
-    fontWeight: 'bold',
+    backgroundColor: colorConfig.backgroundColor,
+    color: colorConfig.textColor,
+    fontWeight: 600,
     minWidth: 100,
+    transition: 'all 0.2s ease-in-out',
+    border: '1px solid rgba(0,0,0,0.1)',
     '& .MuiChip-label': {
-      padding: '0 8px',
+      padding: '0 10px',
+      textTransform: 'uppercase',
+      fontSize: '0.7rem',
+      letterSpacing: '0.5px',
     },
+    '&:hover': {
+      backgroundColor: colorConfig.hoverColor || colorConfig.backgroundColor,
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    }
   };
 });
 
@@ -161,7 +223,7 @@ const TopEtablissements = ({ anneeScolaire }) => {
     <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
       <Box mb={3}>
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-          Top 5 des établissements
+          Top 10 des établissements
           {anneeScolaire && (
             <Typography variant="caption" display="block" color="text.secondary">
               Année scolaire: {anneeScolaire}
@@ -176,6 +238,7 @@ const TopEtablissements = ({ anneeScolaire }) => {
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Établissement</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Commune</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Cycle</TableCell>
               <TableCell align="right" sx={{ fontWeight: 'bold' }}>Moyenne</TableCell>
               <TableCell align="right" sx={{ fontWeight: 'bold' }}>Élèves</TableCell>
@@ -187,6 +250,7 @@ const TopEtablissements = ({ anneeScolaire }) => {
                 <TableRow key={index} hover>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{etablissement.nom || 'Nom inconnu'}</TableCell>
+                  <TableCell>{etablissement.commune || 'Inconnue'}</TableCell>
                   <TableCell>
                     {etablissement.cycle ? (
                       <CycleChip 
@@ -211,7 +275,7 @@ const TopEtablissements = ({ anneeScolaire }) => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 2 }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 2 }}>
                   <Typography variant="body2" color="textSecondary">
                     Aucune donnée disponible
                   </Typography>

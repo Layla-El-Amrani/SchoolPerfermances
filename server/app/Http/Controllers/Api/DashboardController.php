@@ -206,9 +206,13 @@ class DashboardController extends Controller
             // Log de débogage
             \Log::info("Début de topEtablissementsParProvince pour l'année: " . $anneeScolaire);
             
-            // Récupérer tous les résultats de l'année scolaire
+            // Charger les établissements avec leurs élèves, communes et résultats
             $resultats = \App\Models\ResultatEleve::where('annee_scolaire', $anneeScolaire)
-                ->with('eleve.etablissement')
+                ->with([
+                    'eleve.etablissement' => function($query) {
+                        $query->with(['commune']);
+                    }
+                ])
                 ->get();
                 
             \Log::info("Nombre de résultats trouvés: " . $resultats->count());
@@ -247,15 +251,37 @@ class DashboardController extends Controller
                 }
                 
                 if (!isset($etablissementsData[$codeEtab])) {
+                    // Log pour déboguer les données de l'établissement
+                    \Log::info('Données de l\'établissement:', [
+                        'code_etab' => $codeEtab,
+                        'nom' => $resultat->eleve->etablissement->nom_etab_fr,
+                        'code_commune' => $resultat->eleve->etablissement->code_commune,
+                        'commune_relation' => $resultat->eleve->etablissement->commune ? 'existe' : 'n\'existe pas'
+                    ]);
+
                     $etablissementsData[$codeEtab] = [
                         'id' => $codeEtab,
                         'nom' => $resultat->eleve->etablissement->nom_etab_fr,
+                        'commune' => $resultat->eleve->etablissement->commune ? $resultat->eleve->etablissement->commune->ll_com : 'Inconnue',
                         'cycle' => $resultat->eleve->etablissement->cycle,
                         'moyenne' => 0,
                         'total_notes' => 0,
                         'total_eleves' => [],
                         'nombre_eleves' => 0
                     ];
+                    
+                    // Si la commune est inconnue, on essaie de la charger manuellement
+                    if (!$resultat->eleve->etablissement->commune && $resultat->eleve->etablissement->code_commune) {
+                        $commune = \App\Models\Commune::find($resultat->eleve->etablissement->code_commune);
+                        if ($commune) {
+                            $etablissementsData[$codeEtab]['commune'] = $commune->ll_com;
+                            \Log::info('Commune chargée manuellement:', [
+                                'code_commune' => $commune->cd_com,
+                                'nom_commune' => $commune->ll_com,
+                                'etablissement' => $codeEtab
+                            ]);
+                        }
+                    }
                 }
                 
                 // Garder une trace des élèves uniques et de leurs moyennes
@@ -298,10 +324,10 @@ class DashboardController extends Controller
                 unset($etab['total_eleves']);
             }
             
-            // Trier par moyenne décroissante et prendre les 5 premiers
+            // Trier par moyenne décroissante et prendre les 10 premiers
             $etablissements = collect($etablissementsData)
                 ->sortByDesc('moyenne')
-                ->take(5)
+                ->take(10)
                 ->values();
                 
             \Log::info("Résultats finaux", [
@@ -414,6 +440,16 @@ class DashboardController extends Controller
             // Vérifier les colonnes de la table resultat_eleve
             $columns = \DB::select('SHOW COLUMNS FROM resultat_eleve');
             $moyenneColumn = null;
+            
+            // Afficher la structure complète de la table pour le débogage
+            \Log::info("Structure de la table resultat_eleve: " . json_encode($columns, JSON_PRETTY_PRINT));
+            
+            // Vérifier les données dans la table resultat_eleve
+            $sampleResults = \DB::table('resultat_eleve')
+                ->where('annee_scolaire', $anneeScolaire)
+                ->limit(5)
+                ->get();
+            \Log::info("Exemples de données dans resultat_eleve: " . json_encode($sampleResults, JSON_PRETTY_PRINT));
             
             foreach ($columns as $column) {
                 if (strtolower($column->Field) === 'moyensession' || strtolower($column->Field) === 'moyenne') {

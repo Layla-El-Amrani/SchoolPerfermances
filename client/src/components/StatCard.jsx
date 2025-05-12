@@ -23,7 +23,7 @@ const StyledCard = styled(Card, {
 })(({ theme, color, fullHeight }) => ({
   height: '100%',
   width: '100%',
-  minHeight: '200px',
+  minHeight: '160px',
   display: 'flex',
   flexDirection: 'column',
   transition: 'transform 0.3s ease, box-shadow 0.3s ease',
@@ -39,11 +39,16 @@ const StyledCard = styled(Card, {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    padding: theme.spacing(3),
+    padding: theme.spacing(2),
     '&:last-child': {
-      paddingBottom: theme.spacing(3),
+      paddingBottom: theme.spacing(2),
     },
-  }
+  },
+  ...(fullHeight && {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+  })
 }));
 
 const IconContainer = styled(Box)(({ theme, color }) => ({
@@ -92,7 +97,7 @@ const StatCard = (props) => {
     type, 
     trend = 0, 
     subtitle, 
-    fullHeight = false, 
+    fullHeight = true, 
     icon: IconProp,
     sx = {}
   } = props;
@@ -138,6 +143,11 @@ const StatCard = (props) => {
           Icon: WarningIcon,
           color: 'error'
         };
+      case 'rang':
+        return {
+          Icon: EmojiEventsIcon,
+          color: 'warning'
+        };
       default:
         return {
           Icon: null,
@@ -160,6 +170,8 @@ const StatCard = (props) => {
         return 'success';
       case 'echec':
         return 'error';
+      case 'rang':
+        return 'warning';
       default:
         return 'primary';
     }
@@ -210,14 +222,14 @@ const StatCard = (props) => {
           height: '100%',
           justifyContent: 'space-between',
           flexGrow: 1,
-          minHeight: '150px'
+          minHeight: '100px'
         }}>
           <Box display="flex" flexDirection="column" alignItems="flex-start" mb={2}>
             {Icon && (
               <Box 
                 sx={{
-                  width: '48px',
-                  height: '48px',
+                  width: '40px',
+                  height: '40px',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -226,7 +238,7 @@ const StatCard = (props) => {
                   color: theme.palette[iconColor]?.main || theme.palette.primary.main,
                   marginBottom: 2,
                   '& svg': {
-                    fontSize: '24px'
+                    fontSize: '20px'
                   }
                 }}
               >
@@ -273,8 +285,8 @@ const StatCard = (props) => {
             </Box>
           </Box>
           
-          <Box sx={{ mt: 'auto', pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
-            {subtitle ? (
+          {subtitle && (
+            <Box sx={{ mt: 'auto', pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
               <Typography 
                 variant="caption" 
                 color="textSecondary"
@@ -286,23 +298,8 @@ const StatCard = (props) => {
               >
                 {subtitle}
               </Typography>
-            ) : (
-              <Typography 
-                variant="caption" 
-                color="textSecondary"
-                sx={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: '0.75rem',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {type === 'moyenne' || type === 'reussite' || type === 'echec' 
-                  ? 'Moyenne sur 20' 
-                  : 'Total'}
-              </Typography>
-            )}
-          </Box>
+            </Box>
+          )}
         </Box>
       </CardContent>
     </StyledCard>

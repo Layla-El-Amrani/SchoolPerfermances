@@ -15,33 +15,84 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  styled
+  styled,
+  Tabs,
+  Tab,
+  useTheme,
+  TextField,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  IconButton,
+  Tooltip,
+  Button,
+  MenuItem,
+  InputLabel,
+  Select,
+  FormControl,
+  FormHelperText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
 } from '@mui/material';
 import { useYear } from '../contexts/YearContext';
-import FilterSection from '../components/FilterSection';
 import StatCard from '../components/StatCard';
 import { apiEndpoints } from '../services/api';
 import api from '../services/api';
-import { School, LocationOn, People, Class } from '@mui/icons-material';
+import { School, LocationOn, People, Timeline as TimelineIcon, CompareArrows } from '@mui/icons-material';
+import SchoolIcon from '@mui/icons-material/School';
+import NiveauxAnalysis from '../components/analyse-etablissement/niveaux/NiveauxAnalysis';
+import MatieresAnalysis from '../components/analyse-etablissement/matieres/MatieresAnalysis';
+import ComparaisonAnnuelle from '../components/analyse-etablissement/comparaison/ComparaisonAnnuelle';
 
 const PageContainer = styled(Container)(({ theme }) => ({
-  paddingTop: theme.spacing(4),
-  paddingBottom: theme.spacing(4),
+  padding: '0 !important',
+  width: '100%',
+  maxWidth: '100% !important',
+  margin: 0,
+  '& > *': {
+    width: '100%',
+    maxWidth: '100%',
+    margin: '0 !important',
+    padding: `${theme.spacing(1)} !important`,
+    [theme.breakpoints.up('sm')]: {
+      padding: `${theme.spacing(2)} !important`,
+    },
+    '& .MuiGrid-root': {
+      width: '100%',
+      maxWidth: '100%',
+      margin: 0,
+    },
+  },
 }));
 
 const AnalyseEtablissement = () => {
+  const theme = useTheme();
   const [communes, setCommunes] = useState([]);
   const [etablissements, setEtablissements] = useState([]);
   const [selectedCommune, setSelectedCommune] = useState('');
   const [selectedEtablissement, setSelectedEtablissement] = useState('');
   const [selectedEtablissementData, setSelectedEtablissementData] = useState(null);
   const [statsEtablissement, setStatsEtablissement] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState({
-    communes: false,
-    etablissements: false,
-    stats: false
+    etablissement: true,
+    stats: true,
+    communes: true
   });
+  const [activeTab, setActiveTab] = useState(0);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
   const { selectedYear } = useYear();
   
   // Fonction pour formater les nombres avec séparateur de milliers
@@ -156,36 +207,101 @@ const AnalyseEtablissement = () => {
   };
 
   return (
-    <PageContainer maxWidth="lg">
-      <Typography variant="h4" gutterBottom>
+    <PageContainer maxWidth={false} disableGutters sx={{ p: 0, pt: 0 }}>
+      <Typography component="h1" sx={{ 
+        fontWeight: 'normal', 
+        mb: 1.5,
+        fontSize: '1.1rem',
+        color: 'text.secondary'
+      }}>
         Analyse par Établissement
       </Typography>
 
-      <FilterSection
-        title="Filtrer les établissements"
-        filters={[
-          {
-            id: 'commune',
-            label: 'Sélectionner une commune',
-            options: communes
-          },
-          {
-            id: 'etablissement',
-            label: 'Sélectionner un établissement',
-            options: etablissements,
-            disabled: !selectedCommune
-          }
-        ]}
-        selectedValues={{
-          commune: selectedCommune,
-          etablissement: selectedEtablissement
-        }}
-        onFilterChange={handleFilterChange}
-        loading={{
-          commune: loading.communes,
-          etablissement: loading.etablissements
-        }}
-      />
+      <Box sx={{ mb: 3, width: '100%' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 200, flex: 1 }}>
+            <InputLabel id="commune-select-label">Commune</InputLabel>
+            <Select
+              labelId="commune-select-label"
+              value={selectedCommune || ''}
+              onChange={(e) => handleFilterChange('commune', e.target.value)}
+              label="Commune"
+              disabled={loading.communes}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'divider',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+              }}
+            >
+              <MenuItem value="">
+                <em>Toutes</em>
+              </MenuItem>
+              {communes.map((commune) => (
+                <MenuItem key={commune.value} value={commune.value}>
+                  {commune.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <FormControl 
+            size="small" 
+            sx={{ minWidth: 200, flex: 1 }}
+            disabled={!selectedCommune || loading.etablissements}
+          >
+            <InputLabel id="etablissement-select-label">Établissement</InputLabel>
+            <Select
+              labelId="etablissement-select-label"
+              value={selectedEtablissement || ''}
+              onChange={(e) => handleFilterChange('etablissement', e.target.value)}
+              label="Établissement"
+              disabled={!selectedCommune || loading.etablissements}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'divider',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                },
+              }}
+            >
+              <MenuItem value="">
+                <em>Tous</em>
+              </MenuItem>
+              {etablissements.map((etablissement) => (
+                <MenuItem key={etablissement.value} value={etablissement.value}>
+                  {etablissement.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            size="small"
+            onClick={() => {
+              setSelectedCommune('');
+              setSelectedEtablissement('');
+            }}
+            disabled={!selectedCommune && !selectedEtablissement}
+            sx={{
+              height: '40px',
+              minWidth: '100px',
+              textTransform: 'none',
+              whiteSpace: 'nowrap',
+              flexShrink: 0
+            }}
+          >
+            Réinitialiser
+          </Button>
+        </Box>
+      </Box>
 
       {error && (
         <Box my={2} p={2} bgcolor="error.light" color="error.contrastText" borderRadius={1}>
@@ -200,109 +316,126 @@ const AnalyseEtablissement = () => {
       )}
 
       {selectedEtablissementData && (
-        <Box mt={4}>
-          <Card elevation={3}>
+        <Box sx={{ width: '100%', mt: 2, maxWidth: '100%', overflowX: 'auto' }}>
+          <Card>
             <CardContent>
-              <Grid container spacing={3} sx={{ '& > .MuiGrid-item': { display: 'flex' } }}>
-                {/* Carte du nom de l'établissement */}
-                <Grid xs={12} sm={6} md={3}>
-                  <StatCard 
-                    title="Établissement"
-                    value={selectedEtablissementData.nom_etab_fr || selectedEtablissementData.nom_etab_ar || 'Non spécifié'}
-                    icon={School}
-                    type="etablissements"
-                    fullHeight
-                    sx={{ height: '100%' }}
-                  />
-                </Grid>
+              <Box sx={{ width: '100%' }}>
+                <Grid container spacing={3} sx={{ display: 'flex', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
+                  {/* Première rangée */}
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Établissement"
+                      value={selectedEtablissementData.nom_etab_fr || selectedEtablissementData.nom_etab_ar || 'Non spécifié'}
+                      icon={School}
+                      type="etablissements"
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
 
-                {/* Carte de la commune */}
-                <Grid xs={12} sm={6} md={3}>
-                  <StatCard 
-                    title="Commune"
-                    value={selectedEtablissementData.commune?.nom || 
-                           (selectedCommune ? communes.find(c => c.value === selectedCommune)?.label : 'Non spécifiée')}
-                    icon={LocationOn}
-                    type="communes"
-                    fullHeight
-                    sx={{ height: '100%' }}
-                  />
-                </Grid>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Commune"
+                      value={selectedEtablissementData.commune?.nom || 
+                            (selectedCommune ? communes.find(c => c.value === selectedCommune)?.label : 'Non spécifiée')}
+                      icon={LocationOn}
+                      type="communes"
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
 
-                {/* Carte du cycle éducatif */}
-                <Grid xs={12} sm={6} md={3}>
-                  <StatCard 
-                    title="Cycle éducatif"
-                    value={selectedEtablissementData.cycle || 'Non spécifié'}
-                    icon={School}
-                    type="etablissements"
-                    fullHeight
-                    sx={{ height: '100%' }}
-                  />
-                </Grid>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Cycle éducatif"
+                      value={selectedEtablissementData.cycle || 'Non spécifié'}
+                      icon={School}
+                      type="cycles"
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
 
-                {/* Carte du nombre d'élèves */}
-                <Grid xs={12} sm={6} md={3}>
-                  <StatCard 
-                    title="Nombre d'élèves"
-                    value={statsEtablissement?.statistiques?.nombre_eleves !== undefined ? 
-                           formatNumber(statsEtablissement.statistiques.nombre_eleves) : 'N/A'}
-                    icon={People}
-                    type="eleves"
-                    fullHeight
-                    sx={{ height: '100%' }}
-                  />
-                </Grid>
-                
-                {/* Statistiques de l'établissement */}
-                <Grid xs={12} mt={3}>
-                  <Grid container spacing={2} sx={{ '& > .MuiGrid-item': { display: 'flex' } }}>
-                    <Grid xs={12} md={6}>
-                      <StatCard 
-                        title="Moyenne Générale"
-                        value={statsEtablissement?.moyenne_generale !== undefined ? 
-                          statsEtablissement.moyenne_generale.toFixed(2) : 'N/A'}
-                        type="moyenne"
-                        trend={0}
-                        sx={{ height: '100%' }}
-                      />
-                    </Grid>
-                    
-                    <Grid xs={12} md={6}>
-                      <StatCard 
-                        title="Taux de Réussite"
-                        value={statsEtablissement?.taux_reussite !== undefined ? 
-                          `${statsEtablissement.taux_reussite}%` : 'N/A'}
-                        type="reussite"
-                        trend={0}
-                        sx={{ height: '100%' }}
-                      />
-                    </Grid>
-                    
-                    <Grid xs={12} md={6}>
-                      <StatCard 
-                        title="Classement Commune"
-                        value={statsEtablissement?.rang_commune ? 
-                          `#${statsEtablissement.rang_commune}` : 'N/A'}
-                        type="communes"
-                        icon={LocationOn}
-                        sx={{ height: '100%' }}
-                      />
-                    </Grid>
-                    
-                    <Grid xs={12} md={6}>
-                      <StatCard 
-                        title="Classement Province"
-                        value={statsEtablissement?.rang_province ? 
-                          `#${statsEtablissement.rang_province}` : 'N/A'}
-                        type="communes"
-                        icon={LocationOn}
-                        sx={{ height: '100%' }}
-                      />
-                    </Grid>
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Nombre d'élèves"
+                      value={statsEtablissement?.statistiques?.nombre_eleves !== undefined ? 
+                            statsEtablissement.statistiques.nombre_eleves.toString() : 'N/A'}
+                      icon={People}
+                      type="eleves"
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
+
+                  {/* Deuxième rangée */}
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Classement Province"
+                      value={statsEtablissement?.statistiques?.rang_province ? 
+                        `#${statsEtablissement.statistiques.rang_province}` : 'N/A'}
+                      type="communes"
+                      icon={LocationOn}
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Classement Commune"
+                      value={statsEtablissement?.statistiques?.rang_commune ? 
+                        `#${statsEtablissement.statistiques.rang_commune}` : 'N/A'}
+                      type="communes"
+                      icon={LocationOn}
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Moyenne Générale"
+                      value={statsEtablissement?.statistiques?.moyenne_generale?.toFixed(2) || 'N/A'}
+                      type="moyenne"
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3} lg={3} xl={3} sx={{ display: 'flex', flex: '0 0 calc(25% - 18px)', marginBottom: '24px' }}>
+                    <StatCard 
+                      title="Taux de Réussite"
+                      value={statsEtablissement?.statistiques?.taux_reussite ? 
+                            `${statsEtablissement.statistiques.taux_reussite}%` : 'N/A'}
+                      type="reussite"
+                      fullHeight
+                      sx={{ height: '100%', minHeight: '160px', display: 'flex', flexDirection: 'column' }}
+                    />
                   </Grid>
                 </Grid>
-              </Grid>
+              </Box>
+
+              {/* Onglets d'analyse */}
+              <Box sx={{ width: '100%', mt: 3 }}>
+                <Tabs 
+                  value={activeTab} 
+                  onChange={handleTabChange}
+                  variant="fullWidth"
+                  indicatorColor="primary"
+                  textColor="primary"
+                >
+                  <Tab icon={<TimelineIcon />} label="Par Niveau" />
+                  <Tab icon={<SchoolIcon />} label="Par Matière" />
+                  <Tab icon={<CompareArrows />} label="Comparaison Annuelle" />
+                </Tabs>
+
+                <Box sx={{ mt: 3 }}>
+                  {activeTab === 0 && <NiveauxAnalysis etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
+                  {activeTab === 1 && <MatieresAnalysis etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
+                  {activeTab === 2 && <ComparaisonAnnuelle etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Box>

@@ -20,7 +20,7 @@ import { useYear } from '../contexts/YearContext';
 import './Dashboard.css';
 
 const DashboardContainer = styled(Container)(({ theme }) => ({
-  paddingTop: theme.spacing(4),
+  paddingTop: 0,
   paddingBottom: theme.spacing(4),
   '& .MuiGrid-root': {
     flexBasis: 'auto',
@@ -38,7 +38,7 @@ const DashboardHeader = styled(Box)(({ theme }) => ({
   },
   '& .subtitle': {
     color: theme.palette.text.secondary,
-    fontSize: '1.1rem',
+    fontSize: '1.0rem',
   },
 }));
 
@@ -175,7 +175,7 @@ const Dashboard = () => {
             <DashboardHeader>
 
                 <Typography className="subtitle">
-                    {province.nom_province} • Année scolaire {stats.annee_scolaire}
+                    Province {province.nom_province} • Année scolaire {stats.annee_scolaire}
                 </Typography>
             </DashboardHeader>
 
@@ -263,29 +263,34 @@ const Dashboard = () => {
               </Grid>
             </Grid>
 
-            {/* Section Top 5 des établissements */}
+            {/* Section Comparaison des communes en haut à droite */}
             <Grid container spacing={3} sx={{ mt: 2 }}>
               <Grid item xs={12} md={6}>
-                <Card>
-                  <CardContent>
+                {/* Espace vide à gauche pour équilibrer la mise en page */}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card sx={{ height: '100%' }}>
+                  <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" gutterBottom>
-                      Top 5 des établissements
+                      Comparaison des communes
                     </Typography>
-                    <TopEtablissements anneeScolaire={selectedYear} />
+                    <Box sx={{ flexGrow: 1, minHeight: '400px' }}>
+                      <ComparaisonCommunes idProvince={province.id_province} />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
             </Grid>
-            
-            {/* Section Comparaison des communes */}
-            <Grid container spacing={3} sx={{ mt: 2, mb: 4 }}>
+
+            {/* Section Top 10 des établissements sur toute la largeur en dessous */}
+            <Grid container spacing={3} sx={{ mt: 2 }}>
               <Grid item xs={12}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      Comparaison des communes
+                      Top 10 des établissements
                     </Typography>
-                    <ComparaisonCommunes idProvince={province.id_province} />
+                    <TopEtablissements anneeScolaire={selectedYear} />
                   </CardContent>
                 </Card>
               </Grid>

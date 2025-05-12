@@ -18,12 +18,18 @@
 
 .content {
   flex: 1;
-  margin-left: 250px;
-  padding: 0;
+  margin: 0 0 0 250px !important;
+  padding: 10 !important;
   width: calc(100% - 250px);
   min-height: 100vh;
   box-sizing: border-box;
   background-color: #f5f7fa;
+}
+
+/* S'assurer qu'il n'y a pas de marge en haut */
+body, html, #root, .app-container {
+  margin-top: 10px !important;
+  padding-top: 0 !important;
 }
 
 .logo {

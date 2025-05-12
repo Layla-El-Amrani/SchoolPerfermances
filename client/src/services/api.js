@@ -40,9 +40,12 @@ export const apiEndpoints = {
     
     // Communes
     getCommunes: '/commune/communes',
+    getCommune: (id) => `/commune/communes/${id}`,
     statCommune: (id, annee) => `/commune/${id}/stats/${annee}`,
     evolutionCommune: (id) => `/commune/${id}/evolution`,
     statsParCycleCommune: (id, annee) => `/commune/${id}/cycles/${annee}`,
+    statsEtablissementsParCycle: (id, annee) => `/commune/${id}/stats/cycles/${annee}`,
+    topEtablissementsCommune: (id, annee) => `/commune/${id}/top-etablissements${annee ? `/${annee}` : ''}`,
     
     // Établissements
     getEtablissements: '/etablissements',
@@ -50,6 +53,7 @@ export const apiEndpoints = {
     statEtablissement: (id, annee) => `/etablissement/${id}/stats/${annee}`,
     statNiveau: (id, annee, codeNiveau) => `/etablissement/${id}/niveaux/${annee}/${codeNiveau}`,
     statMatiere: (id, codeNiveau, annee) => `/etablissement/${id}/matieres/${codeNiveau}/${annee}`,
+    evaluationAnnuelle: (id) => `/etablissement/${id}/evolution`,
     
     // Provinces
     getProvinces: '/provinces',
@@ -57,7 +61,7 @@ export const apiEndpoints = {
     // Rapports
     getRapports: '/rapports',
     generateRapport: '/rapports/generer',
-    evaluationAnnuelle: (id) => `/etablissement/${id}/evolution`,
+   
     
     // Rapports
     rapportEtablissement: (id, annee) => `/rapports/etablissement/${id}/${annee}`,

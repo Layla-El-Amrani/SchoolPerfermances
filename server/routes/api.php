@@ -32,12 +32,18 @@ Route::prefix('province')->group(function () {
 Route::prefix('commune')->group(function () {
     // Get all communes for selection
     Route::get('/communes', [CommuneController::class, 'getCommunes']);
+    // Get single commune details
+    Route::get('/communes/{id}', [CommuneController::class, 'getCommune']);
     // Get commune statistics
     Route::get('/{id_commune}/stats/{annee_scolaire?}', [CommuneController::class, 'statCommune']);
     // Get commune evolution
     Route::get('/{id_commune}/evolution', [CommuneController::class, 'evolutionCommune']);
     // Get statistics by cycle for a specific commune
     Route::get('/{id_commune}/cycles/{annee_scolaire?}', [CommuneController::class, 'statsParCycle']);
+    // Get establishment statistics by cycle for a specific commune
+    Route::get('/{id_commune}/stats/cycles/{annee_scolaire?}', [CommuneController::class, 'getStatsParCycle']);
+    // Get top 3 establishments for a specific commune
+    Route::get('/{id_commune}/top-etablissements/{annee_scolaire?}', [CommuneController::class, 'topEtablissements']);
 });
 
 // Routes API pour les établissements

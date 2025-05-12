@@ -5,14 +5,16 @@ import { useTranslation } from '../hooks/useTranslation';
 import './Sidebar.css';
 
 const Sidebar = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true);
     const { t, translations } = useTranslation();
     const direction = translations.common?.direction || 'ltr';
 
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth > 768) {
-                setIsOpen(false);
+            // Ne pas forcer la fermeture de la barre latérale
+            if (isOpen) {
+                document.documentElement.style.setProperty('--sidebar-width', '250px');
+            } else {
                 document.documentElement.style.setProperty('--sidebar-width', '80px');
             }
         };
@@ -20,7 +22,7 @@ const Sidebar = () => {
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {
@@ -37,14 +39,14 @@ const Sidebar = () => {
             label: 'Tableau de bord'
         },
         {
-            path: '/analyse',
+            path: '/analyse-commune',
             icon: <FaChartLine />,
-            label: 'Analyse'
+            label: 'Analyse des Communes'
         },
         {
             path: '/analyse-etablissement',
             icon: <FaSchool />,
-            label: 'Établissements'
+            label: 'Analyse des Établissements'
         },
         {
             path: '/import-donnees',
