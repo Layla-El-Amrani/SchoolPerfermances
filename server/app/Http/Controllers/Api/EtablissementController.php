@@ -509,12 +509,8 @@ class EtablissementController extends Controller
     {
         try {
             $etablissement = Etablissement::with(['commune.province'])->findOrFail($code_etab);
-            
-            $anneesScolaires = ResultatEleve::whereHas('eleve', function($query) use ($code_etab) {
-                $query->where('code_etab', $code_etab);
-            })
-            ->distinct()
-            ->pluck('annee_scolaire');
+            // Récupérer toutes les années scolaires existantes (même sans résultats)
+            $anneesScolaires = \App\Models\AnneeScolaire::orderBy('annee_scolaire')->pluck('annee_scolaire');
 
             $evolution = $anneesScolaires->map(function($annee) use ($code_etab) {
                 $moyenneAnnee = ResultatEleve::whereHas('eleve', function($query) use ($code_etab) {
@@ -540,8 +536,8 @@ class EtablissementController extends Controller
 
                 return [
                     'annee_scolaire' => $annee,
-                    'moyenne' => round($moyenneAnnee, 2),
-                    'taux_reussite' => round($tauxReussite, 2)
+                    'moyenne' => $moyenneAnnee !== null ? round($moyenneAnnee, 2) : 0,
+                    'taux_reussite' => $totalResultats > 0 ? round($tauxReussite, 2) : 0
                 ];
             });
 

@@ -28,7 +28,7 @@
 
 /* S'assurer qu'il n'y a pas de marge en haut */
 body, html, #root, .app-container {
-  margin-top: 10px !important;
+  margin-top: 0 !important;
   padding-top: 0 !important;
 }
 

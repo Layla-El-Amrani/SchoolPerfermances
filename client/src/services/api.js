@@ -51,7 +51,12 @@ export const apiEndpoints = {
     getEtablissements: '/etablissements',
     getEtablissementsByCommune: (code_commune) => `/etablissement/by-commune?code_commune=${encodeURIComponent(code_commune)}`,
     statEtablissement: (id, annee) => `/etablissement/${id}/stats/${annee}`,
-    statNiveau: (id, annee, codeNiveau) => `/etablissement/${id}/niveaux/${annee}/${codeNiveau}`,
+    // Helper pour niveaux d'un établissement (statNiveau retourne stats, pas la liste brute)
+    niveauxEtablissement: (id, annee) => `/etablissement/${id}/niveaux/${annee}`,
+    statNiveau: (id, annee, codeNiveau) =>
+  typeof codeNiveau === 'string' && codeNiveau
+    ? `/etablissement/${id}/niveaux/${annee}/${codeNiveau}`
+    : `/etablissement/${id}/niveaux/${annee}`,
     statMatiere: (id, codeNiveau, annee) => `/etablissement/${id}/matieres/${codeNiveau}/${annee}`,
     evaluationAnnuelle: (id) => `/etablissement/${id}/evolution`,
     

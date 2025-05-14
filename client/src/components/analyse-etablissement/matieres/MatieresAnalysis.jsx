@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import api from '../../../services/api';
 import { apiEndpoints } from '../../../services/api';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#2B4C7E', '#3C9D9B', '#F2B134', '#E76F51', '#6D6875', '#264653', '#A8DADC', '#457B9D', '#F4A261', '#B5838D']; // Palette professionnelle
 
 const MatieresAnalysis = ({ etablissementId, anneeScolaire }) => {
   const [selectedMatiere, setSelectedMatiere] = useState('');
@@ -19,11 +19,21 @@ const MatieresAnalysis = ({ etablissementId, anneeScolaire }) => {
       try {
         setLoading(true);
         // Récupérer d'abord les niveaux pour avoir le code du niveau
-        const niveauxResponse = await api.get(apiEndpoints.statNiveau(etablissementId, anneeScolaire, 'all'));
-        
-        if (niveauxResponse.data && niveauxResponse.data.success && niveauxResponse.data.data.length > 0) {
-          const premierNiveau = niveauxResponse.data.data[0];
-          const codeNiveau = premierNiveau.code_niveau || '1';
+        const niveauxResponse = await api.get(apiEndpoints.statNiveau(etablissementId, anneeScolaire));
+        // On tente d'extraire la liste des niveaux depuis la réponse (statistiques_niveaux ou niveaux)
+        let niveaux = [];
+        if (niveauxResponse.data && niveauxResponse.data.success) {
+          if (Array.isArray(niveauxResponse.data.data?.statistiques_niveaux) && niveauxResponse.data.data.statistiques_niveaux.length > 0) {
+            // Structure type: {data: {statistiques_niveaux: [...]}}
+            niveaux = niveauxResponse.data.data.statistiques_niveaux.map(n => n.niveau);
+          } else if (Array.isArray(niveauxResponse.data.data?.niveaux) && niveauxResponse.data.data.niveaux.length > 0) {
+            // Structure type: {data: {niveaux: [...]}}
+            niveaux = niveauxResponse.data.data.niveaux;
+          }
+        }
+        if (niveaux.length > 0) {
+          const premierNiveau = niveaux[0];
+          const codeNiveau = premierNiveau.code_niveau || premierNiveau.id || '1';
           
           // Ensuite, récupérer les matières pour ce niveau
           const response = await api.get(apiEndpoints.statMatiere(etablissementId, codeNiveau, anneeScolaire));

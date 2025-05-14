@@ -46,7 +46,8 @@ import { School, LocationOn, People, Timeline as TimelineIcon, CompareArrows } f
 import SchoolIcon from '@mui/icons-material/School';
 import NiveauxAnalysis from '../components/analyse-etablissement/niveaux/NiveauxAnalysis';
 import MatieresAnalysis from '../components/analyse-etablissement/matieres/MatieresAnalysis';
-import ComparaisonAnnuelle from '../components/analyse-etablissement/comparaison/ComparaisonAnnuelle';
+import ComparaisonAnnuelle from '../components/analyse-etablissement/ComparaisonAnnuelle';
+import DiagrammeMatiereParNiveau from '../components/AnalyseCommune/DiagrammeMatiereParNiveau';
 
 const PageContainer = styled(Container)(({ theme }) => ({
   padding: '0 !important',
@@ -517,7 +518,17 @@ const AnalyseEtablissement = () => {
 
                 <Box sx={{ mt: 3 }}>
                   {activeTab === 0 && <NiveauxAnalysis etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
-                  {activeTab === 1 && <MatieresAnalysis etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
+                  {activeTab === 1 && (
+                    <>
+                      <Box sx={{ width: '100%', my: 2 }}>
+                        <DiagrammeMatiereParNiveau 
+                          etablissementId={selectedEtablissement}
+                          anneeScolaire={selectedYear}
+                        />
+                      </Box>
+                      <MatieresAnalysis etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />
+                    </>
+                  )}
                   {activeTab === 2 && <ComparaisonAnnuelle etablissementId={selectedEtablissement} anneeScolaire={selectedYear} />}
                 </Box>
               </Box>

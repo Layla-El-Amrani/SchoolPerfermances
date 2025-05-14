@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import PageLoader from '../../PageLoader';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import api from '../../../services/api';
 import { apiEndpoints } from '../../../services/api';
 
 const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
-  const [selectedNiveau, setSelectedNiveau] = useState('');
+  
   const [niveauxData, setNiveauxData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMetric, setSelectedMetric] = useState('moyenne');
 
   // Charger les données des niveaux depuis l'API
   useEffect(() => {
@@ -18,26 +19,42 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
       try {
         setLoading(true);
         // Récupérer les niveaux disponibles pour cet établissement
-        const response = await api.get(apiEndpoints.statNiveau(etablissementId, anneeScolaire, 'all'));
+        const response = await api.get(apiEndpoints.statNiveau(etablissementId, anneeScolaire));
         
         console.log('Réponse complète de l\'API (niveaux):', response);
         console.log('Données brutes:', response.data);
         
         if (response.data && response.data.success) {
           // Formater les données pour correspondre à la structure attendue
-          const niveaux = Array.isArray(response.data.data) ? response.data.data : [];
+          let niveaux = [];
+          if (Array.isArray(response.data.data?.statistiques_niveaux) && response.data.data.statistiques_niveaux.length > 0) {
+            // On extrait directement les infos utiles
+            niveaux = response.data.data.statistiques_niveaux.map(n => {
+              const nom = n.niveau?.nom_niveau || n.niveau?.libelle || n.niveau?.code_niveau || n.niveau?.id || '[Niveau inconnu]';
+              console.log('Niveau brut:', n.niveau, 'Nom utilisé:', nom);
+              return {
+                niveau: nom,
+                moyenne: parseFloat(n.moyenne) || 0,
+                tauxReussite: parseFloat(n.taux_reussite) || 0,
+                notes: n.notes || []
+              };
+            });
+          } else if (Array.isArray(response.data.data?.niveaux) && response.data.data.niveaux.length > 0) {
+            niveaux = response.data.data.niveaux.map(niveau => {
+              const nom = niveau.nom_niveau || niveau.libelle || niveau.code_niveau || niveau.id || '[Niveau inconnu]';
+              console.log('Niveau brut (fallback):', niveau, 'Nom utilisé:', nom);
+              return {
+                niveau: nom,
+                moyenne: parseFloat(niveau.moyenne) || 0,
+                tauxReussite: parseFloat(niveau.taux_reussite) || 0,
+                notes: niveau.notes || []
+              };
+            });
+          }
           console.log('Niveaux extraits:', niveaux);
-          const niveauxFormates = niveaux.map(niveau => ({
-            niveau: niveau.nom_niveau || '',
-            moyenne: parseFloat(niveau.moyenne) || 0,
-            tauxReussite: parseFloat(niveau.taux_reussite) || 0,
-            notes: niveau.notes || []
-          }));
+          const niveauxFormates = niveaux;
           
           setNiveauxData(niveauxFormates);
-          if (niveauxFormates.length > 0) {
-            setSelectedNiveau(niveauxFormates[0].niveau || '');
-          }
         } else {
           // En cas d'erreur ou de données vides, utiliser des données factices pour la démo
           console.log('Utilisation des données factices car la réponse n\'est pas un tableau');
@@ -47,7 +64,6 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
             { niveau: '3ème année', moyenne: 13.8, tauxReussite: 72, notes: [9, 10, 13, 15, 18] },
           ];
           setNiveauxData(mockData);
-          setSelectedNiveau(mockData[0]?.niveau || '');
         }
       } catch (error) {
         console.error('Erreur lors du chargement des données des niveaux:', error);
@@ -58,7 +74,6 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
           { niveau: '3ème année', moyenne: 13.8, tauxReussite: 72, notes: [9, 10, 13, 15, 18] },
         ];
         setNiveauxData(mockData);
-        setSelectedNiveau(mockData[0]?.niveau || '');
       } finally {
         setLoading(false);
       }
@@ -67,9 +82,7 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
     fetchNiveauxData();
   }, [etablissementId, anneeScolaire]);
 
-  const handleNiveauChange = (event) => {
-    setSelectedNiveau(event.target.value);
-  };
+  
 
   if (loading) {
     return (
@@ -87,63 +100,53 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
     );
   }
 
-  const selectedNiveauData = niveauxData.find(n => n.niveau === selectedNiveau);
-
   return (
-    <Box sx={{ mt: 3 }}>
-      <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>Niveau</InputLabel>
-        <Select
-          value={selectedNiveau}
-          onChange={handleNiveauChange}
-          label="Niveau"
-        >
-          {niveauxData.map((niveau) => (
-            <MenuItem key={niveau.niveau} value={niveau.niveau}>
-              {niveau.niveau}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Moyenne par niveau</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={niveauxData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="niveau" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="moyenne" fill="#8884d8" name="Moyenne" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+    <>
+      <Box sx={{ mt: 3, width: '100%' }}>
+        <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
+          {/* Moyenne par niveau (BarChart horizontal) */}
+          <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex', minWidth: 0, width: '50%' }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Moyenne par niveau
+                </Typography>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={niveauxData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="niveau" type="category" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="moyenne" fill="#F2B134" name="Moyenne" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+          {/* Taux de réussite par niveau (BarChart vertical) */}
+          <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex', minWidth: 0, width: '50%' }}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Taux de réussite par niveau
+                </Typography>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={niveauxData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="niveau" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="tauxReussite" fill="#00796B" name="Taux de réussite (%)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Taux de réussite par niveau</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={niveauxData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="niveau" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="tauxReussite" stroke="#82ca9d" name="Taux de réussite %" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+      </Box>
+    </>
   );
 };
 
