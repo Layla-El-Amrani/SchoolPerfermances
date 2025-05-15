@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import PageLoader from '../../PageLoader';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, RadialBarChart, RadialBar, LineChart, Line } from 'recharts';
 import api from '../../../services/api';
 import { apiEndpoints } from '../../../services/api';
 
@@ -101,52 +101,60 @@ const NiveauxAnalysis = ({ etablissementId, anneeScolaire }) => {
   }
 
   return (
-    <>
-      <Box sx={{ mt: 3, width: '100%' }}>
-        <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
-          {/* Moyenne par niveau (BarChart horizontal) */}
-          <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex', minWidth: 0, width: '50%' }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Moyenne par niveau
-                </Typography>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={niveauxData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="niveau" type="category" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="moyenne" fill="#F2B134" name="Moyenne" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-          {/* Taux de réussite par niveau (BarChart vertical) */}
-          <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex', minWidth: 0, width: '50%' }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Taux de réussite par niveau
-                </Typography>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={niveauxData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="niveau" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="tauxReussite" fill="#00796B" name="Taux de réussite (%)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f7fafc 0%, #e3e6ec 100%)', py: { xs: 2, md: 6 }, px: { xs: 0, md: 4 } }}>
+      <Box sx={{ mb: 4, px: { xs: 2, md: 8 } }}>
+        <Typography variant="h6" fontWeight={600} color="#2B4C7E">Analyse par niveau</Typography>
       </Box>
-    </>
+      <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', px: 0, gap: 2, justifyContent: 'center' }}>
+        {/* Moyenne par niveau (RadarChart) */}
+        <Grid item sx={{ minWidth: 0, width: '40%' }}>
+          <Card sx={{ boxShadow: 3, borderRadius: 3, transition: '0.3s', ':hover': { boxShadow: 6 }, height: '100%' }}>
+            <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+              <Typography variant="h6" fontWeight={600} color="#264653" gutterBottom>
+                Moyenne par niveau
+              </Typography>
+              <ResponsiveContainer width="100%" height={350}>
+                <RadarChart data={niveauxData} cx="50%" cy="50%" outerRadius="80%">
+                  <PolarGrid stroke="#e0e0e0" />
+                  <PolarAngleAxis dataKey="niveau" tick={{ fill: '#264653', fontWeight: 600 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 20]} tick={{ fill: '#888', fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <Radar name="Moyenne" dataKey="moyenne" stroke="#F2B134" fill="#F2B134" fillOpacity={0.5} />
+                  <Tooltip contentStyle={{ background: '#fff', borderRadius: 8, color: '#222', boxShadow: '0 2px 8px #e3e6ec' }} />
+                  <Legend iconType="circle" />
+                </RadarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+        {/* Taux de réussite par niveau (LineChart) */}
+        <Grid item sx={{ minWidth: 0, width: '40%' }}>
+          <Card sx={{ boxShadow: 3, borderRadius: 3, transition: '0.3s', ':hover': { boxShadow: 6 }, height: '100%' }}>
+            <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+              <Typography variant="h6" fontWeight={600} color="#264653" gutterBottom>
+                Taux de réussite par niveau
+              </Typography>
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={niveauxData} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="colorTauxLine" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#00796B" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="#6FFFCB" stopOpacity={0.2} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 6" stroke="#e0e0e0" />
+                  <XAxis dataKey="niveau" axisLine={false} tickLine={false} stroke="#b0b3b8" />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} stroke="#b0b3b8" />
+                  <Tooltip contentStyle={{ background: '#fff', borderRadius: 8, color: '#222', boxShadow: '0 2px 8px #e3e6ec' }} />
+                  <Legend iconType="circle" />
+                  <Area type="monotone" dataKey="tauxReussite" stroke="#00796B" fill="url(#colorTauxLine)" fillOpacity={0.3} name="Taux de réussite (%)" />
+                  <Line type="monotone" dataKey="tauxReussite" stroke="#00796B" strokeWidth={3} dot={{ r: 6, fill: '#fff', stroke: '#00796B', strokeWidth: 2 }} name="Taux de réussite (%)" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 

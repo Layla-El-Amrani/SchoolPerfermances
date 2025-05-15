@@ -44,6 +44,8 @@ Route::prefix('commune')->group(function () {
     Route::get('/{id_commune}/stats/cycles/{annee_scolaire?}', [CommuneController::class, 'getStatsParCycle']);
     // Get top 3 establishments for a specific commune
     Route::get('/{id_commune}/top-etablissements/{annee_scolaire?}', [CommuneController::class, 'topEtablissements']);
+    // Get evolution of averages by cycle for a specific commune
+    Route::get('/{id_commune}/evolution-cycles', [CommuneController::class, 'evolutionMoyennesParCycle']);
 });
 
 // Routes API pour les établissements

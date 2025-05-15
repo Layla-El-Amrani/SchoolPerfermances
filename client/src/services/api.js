@@ -43,6 +43,7 @@ export const apiEndpoints = {
     getCommune: (id) => `/commune/communes/${id}`,
     statCommune: (id, annee) => `/commune/${id}/stats/${annee}`,
     evolutionCommune: (id) => `/commune/${id}/evolution`,
+    evolutionMoyennesParCycle: (id) => `/commune/${id}/evolution-cycles`,
     statsParCycleCommune: (id, annee) => `/commune/${id}/cycles/${annee}`,
     statsEtablissementsParCycle: (id, annee) => `/commune/${id}/stats/cycles/${annee}`,
     topEtablissementsCommune: (id, annee) => `/commune/${id}/top-etablissements${annee ? `/${annee}` : ''}`,

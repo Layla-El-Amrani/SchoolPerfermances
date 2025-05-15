@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Commune;
 use App\Models\SecteurScolaire;
 use App\Models\Eleve;
+use App\Models\ResultatEleve;
 
 class Etablissement extends Model
 {
@@ -36,6 +37,18 @@ class Etablissement extends Model
     public function eleves()
     {
         return $this->hasMany(Eleve::class, 'code_etab');
+    }
+    
+    public function resultats()
+    {
+        return $this->hasManyThrough(
+            ResultatEleve::class,
+            Eleve::class,
+            'code_etab', // Clé étrangère dans la table eleve
+            'code_eleve', // Clé étrangère dans la table resultat_eleve
+            'code_etab', // Clé locale dans la table etablissement
+            'code_eleve' // Clé locale dans la table eleve
+        );
     }
 
     public function getCodeEtabAttribute($value)

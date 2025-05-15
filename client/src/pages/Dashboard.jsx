@@ -18,6 +18,7 @@ import { api, apiEndpoints } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useYear } from '../contexts/YearContext';
 import './Dashboard.css';
+import InitialPageLoadIndicator from '../components/InitialPageLoadIndicator';
 
 const DashboardContainer = styled(Container)(({ theme }) => ({
   paddingTop: 0,
@@ -98,9 +99,9 @@ const LoadingContainer = styled(Box)({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  minHeight: '50vh',
+  minHeight: 'calc(100vh - 120px)',
+  width: '100%',
   flexDirection: 'column',
-  gap: '1rem',
 });
 
 const Dashboard = () => {
@@ -149,10 +150,7 @@ const Dashboard = () => {
     if (loading) {
         return (
             <LoadingContainer>
-                <CircularProgress size={60} thickness={4} />
-                <Typography variant="h6" color="textSecondary">
-                    Chargement des statistiques...
-                </Typography>
+                <InitialPageLoadIndicator message="Chargement du tableau de bord..." />
             </LoadingContainer>
         );
     }

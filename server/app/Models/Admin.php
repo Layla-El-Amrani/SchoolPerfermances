@@ -9,20 +9,26 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class Admin extends Authenticatable implements MustVerifyEmail
+class Admin extends Authenticatable
 {
     use HasApiTokens, Notifiable, HasFactory;
 
     protected $table = 'admin';
     protected $primaryKey = 'id_admin';
     protected $fillable = [
-        'nom_admin',
+        'nom',
         'prenom_admin',
         'email',
         'password'
     ];
 
     protected $hidden = [
-        'password'
+        'password',
+        'remember_token'
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
 }

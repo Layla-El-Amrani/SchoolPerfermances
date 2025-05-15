@@ -38,6 +38,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import PageLoader from '../components/PageLoader';
+import InitialPageLoadIndicator from '../components/InitialPageLoadIndicator';
 import { useYear } from '../contexts/YearContext';
 import StatCard from '../components/StatCard';
 import { apiEndpoints } from '../services/api';
@@ -245,6 +246,22 @@ const AnalyseEtablissement = () => {
       setSelectedEtablissement(value);
     }
   };
+
+  if (loading.communes && !loadingError.communes) {
+    return (
+      <Box 
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          minHeight: 'calc(100vh - 120px)',
+        }}
+      >
+        <InitialPageLoadIndicator message="Chargement des données initiales..." />
+      </Box>
+    );
+  }
 
   return (
     <PageContainer maxWidth={false} disableGutters sx={{ p: 0, pt: 0 }}>

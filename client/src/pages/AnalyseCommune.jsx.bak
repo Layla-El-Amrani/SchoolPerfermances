@@ -1,0 +1,320 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  Container, 
+  Typography, 
+  Box, 
+  Grid, 
+  Paper, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  CircularProgress
+} from '@mui/material';
+import { Line, Bar } from 'react-chartjs-2';
+import { useYear } from '../contexts/YearContext';
+import api from '../services/api';
+import { apiEndpoints } from '../services/api';
+
+// Configuration de Chart.js
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
+const AnalyseCommune = () => {
+  const { selectedYear } = useYear();
+  const [communes, setCommunes] = useState([]);
+  const [selectedCommune, setSelectedCommune] = useState('');
+  const [selectedCommuneData, setSelectedCommuneData] = useState(null);
+  const [statsCommune, setStatsCommune] = useState(null);
+  const [evolutionData, setEvolutionData] = useState({ moyennes: null, taux: null });
+  const [isLoading, setIsLoading] = useState({
+    communes: false,
+    stats: false,
+    evolution: false,
+    cycles: false
+  });
+
+  // Charger la liste des communes
+  useEffect(() => {
+    const fetchCommunes = async () => {
+      try {
+        setIsLoading(prev => ({ ...prev, communes: true }));
+        const response = await api.get(apiEndpoints.communes);
+        setCommunes(response.data);
+      } catch (error) {
+        console.error('Erreur lors du chargement des communes:', error);
+      } finally {
+        setIsLoading(prev => ({ ...prev, communes: false }));
+      }
+    };
+
+    fetchCommunes();
+  }, []);
+
+  // Charger les données de la commune sélectionnée
+  const loadCommuneData = useCallback(async () => {
+    if (!selectedCommune) return;
+    
+    try {
+      setIsLoading(prev => ({ ...prev, stats: true }));
+      const [communeResponse, statsResponse] = await Promise.all([
+        api.get(`${apiEndpoints.communes}/${selectedCommune}`),
+        api.get(apiEndpoints.statsCommune(selectedCommune, selectedYear))
+      ]);
+      
+      setSelectedCommuneData(communeResponse.data);
+      setStatsCommune(statsResponse.data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de la commune:', error);
+    } finally {
+      setIsLoading(prev => ({ ...prev, stats: false }));
+    }
+  }, [selectedCommune, selectedYear]);
+
+  // Charger les données d'évolution
+  const loadEvolutionData = useCallback(async () => {
+    if (!selectedCommune) return;
+    
+    try {
+      setIsLoading(prev => ({ ...prev, evolution: true }));
+      const response = await api.get(apiEndpoints.evolutionCommune(selectedCommune));
+      setEvolutionData(response.data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des données d\'évolution:', error);
+    } finally {
+      setIsLoading(prev => ({ ...prev, evolution: false }));
+    }
+  }, [selectedCommune]);
+
+  // Gérer le changement de commune
+  const handleCommuneChange = (event) => {
+    setSelectedCommune(event.target.value);
+  };
+
+  // Effet pour charger les données quand la commune ou l'année change
+  useEffect(() => {
+    if (selectedCommune) {
+      loadCommuneData();
+      loadEvolutionData();
+    }
+  }, [selectedCommune, selectedYear, loadCommuneData, loadEvolutionData]);
+
+  // Composant pour afficher un message quand il n'y a pas de données
+  const NoDataMessage = ({ message = 'Aucune donnée disponible' }) => (
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      height: '100%',
+      p: 3,
+      textAlign: 'center',
+      color: 'text.secondary'
+    }}>
+      <Typography variant="body1">{message}</Typography>
+    </Box>
+  );
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Analyse par Commune
+      </Typography>
+      
+      <Box sx={{ mb: 4 }}>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel id="commune-select-label">Sélectionner une commune</InputLabel>
+          <Select
+            labelId="commune-select-label"
+            id="commune-select"
+            value={selectedCommune}
+            onChange={handleCommuneChange}
+            label="Sélectionner une commune"
+            disabled={isLoading.communes}
+            sx={{ minWidth: 300 }}
+          >
+            {communes.map((commune) => (
+              <MenuItem key={commune.id} value={commune.id}>
+                {commune.nom_commune} ({commune.province?.nom_province || 'Province inconnue'})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {selectedCommune ? (
+        <>
+          {/* Cartes de statistiques */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={4}>
+              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" gutterBottom>
+                  Nombre d'établissements
+                </Typography>
+                {isLoading.stats ? (
+                  <Box display="flex" justifyContent="center">
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : statsCommune ? (
+                  <Typography variant="h4">
+                    {statsCommune.nombre_etablissements || 0}
+                  </Typography>
+                ) : (
+                  <NoDataMessage />
+                )}
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" gutterBottom>
+                  Nombre d'élèves
+                </Typography>
+                {isLoading.stats ? (
+                  <Box display="flex" justifyContent="center">
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : statsCommune ? (
+                  <Typography variant="h4">
+                    {statsCommune.nombre_eleves || 0}
+                  </Typography>
+                ) : (
+                  <NoDataMessage />
+                )}
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper elevation={1} sx={{ p: 3, height: '100%' }}>
+                <Typography variant="h6" gutterBottom>
+                  Taux de réussite moyen
+                </Typography>
+                {isLoading.stats ? (
+                  <Box display="flex" justifyContent="center">
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : statsCommune ? (
+                  <Typography variant="h4">
+                    {statsCommune.taux_reussite_moyen ? `${statsCommune.taux_reussite_moyen.toFixed(1)}%` : 'N/A'}
+                  </Typography>
+                ) : (
+                  <NoDataMessage />
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {/* Graphiques */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={1} sx={{ p: 3, height: '400px' }}>
+                <Typography variant="h6" gutterBottom>
+                  Évolution des moyennes
+                </Typography>
+                {isLoading.evolution ? (
+                  <Box height="100%" display="flex" alignItems="center" justifyContent="center">
+                    <CircularProgress />
+                  </Box>
+                ) : evolutionData.moyennes ? (
+                  <Box height="100%">
+                    <Line
+                      data={evolutionData.moyennes}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: 'top',
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            max: 20,
+                            title: {
+                              display: true,
+                              text: 'Moyenne /20'
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  <NoDataMessage />
+                )}
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={1} sx={{ p: 3, height: '400px' }}>
+                <Typography variant="h6" gutterBottom>
+                  Taux de réussite par année
+                </Typography>
+                {isLoading.evolution ? (
+                  <Box height="100%" display="flex" alignItems="center" justifyContent="center">
+                    <CircularProgress />
+                  </Box>
+                ) : evolutionData.taux ? (
+                  <Box height="100%">
+                    <Line
+                      data={evolutionData.taux}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: 'top',
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                              display: true,
+                              text: 'Taux de réussite (%)'
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  <NoDataMessage />
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+        </>
+      ) : (
+        <Box textAlign="center" my={4}>
+          <Typography variant="body1" color="textSecondary">
+            Veuillez sélectionner une commune pour afficher les statistiques
+          </Typography>
+        </Box>
+      )}
+    </Container>
+  );
+};
+
+export default AnalyseCommune;

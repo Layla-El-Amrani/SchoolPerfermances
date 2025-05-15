@@ -15,7 +15,7 @@ export const login = async (credentials) => {
     try {
         const response = await authApi.post('/auth/login', credentials);
         // Stocker le token dans le localStorage
-        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('token', response.data.access_token);
         return response.data;
     } catch (error) {
         throw error;
@@ -48,11 +48,11 @@ authApi.interceptors.request.use(
 authApi.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Token expiré ou invalide
+        // Rediriger uniquement si l'erreur 401 NE VIENT PAS de la tentative de login elle-même
+        if (error.response?.status === 401 && error.config.url !== '/auth/login') {
             logout();
             window.location.href = '/login';
         }
-        return Promise.reject(error);
+        return Promise.reject(error); // Toujours rejeter pour que le catch local puisse gérer l'erreur
     }
 );

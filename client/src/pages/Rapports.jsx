@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Snackbar, Alert, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Snackbar, Alert, CircularProgress, Container, Card, CardContent, CardActions, Tooltip, TablePagination } from '@mui/material';
 import { 
   Box, 
   Typography, 
@@ -34,30 +34,80 @@ import {
   Person as PersonIcon,
   Email as EmailIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon
+  VisibilityOff as VisibilityOffIcon,
+  Assessment as AssessmentIcon,
+  BarChart as BarChartIcon,
+  ListAlt as ListAltIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  PictureAsPdf as PictureAsPdfIcon,
+  AssessmentOutlined as AssessmentOutlinedIcon
 } from '@mui/icons-material';
 import { api, apiEndpoints } from '../services/api';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
+import InitialPageLoadIndicator from '../components/InitialPageLoadIndicator';
 
-// Styles personnalisés
-const StyledPaper = styled(Paper)(({ theme }) => ({
+// Styles principaux
+const MainReportsCard = styled(Card)(({ theme }) => ({
+  padding: theme.spacing(0),
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[3],
+  marginTop: theme.spacing(3),
+  overflow: 'hidden',
+}));
+
+const StyledTabs = styled(Tabs)(({ theme }) => ({
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  '& .MuiTabs-indicator': {
+    backgroundColor: theme.palette.primary.main,
+    height: '3px',
+  },
+  paddingLeft: theme.spacing(2),
+  paddingRight: theme.spacing(2),
+}));
+
+const StyledTab = styled(Tab)(({ theme }) => ({
+  textTransform: 'none',
+  minWidth: 180, 
+  fontWeight: theme.typography.fontWeightMedium,
+  marginRight: theme.spacing(1),
+  padding: theme.spacing(1.5, 2.5),
+  borderRadius: `${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0 0`,
+  color: theme.palette.text.secondary,
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+    color: theme.palette.text.primary,
+  },
+  '&.Mui-selected': {
+    color: theme.palette.primary.main,
+    fontWeight: theme.typography.fontWeightBold,
+    backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[800],
+  },
+  '& .MuiTab-wrapper': { 
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  '& .MuiSvgIcon-root': { 
+    marginRight: theme.spacing(1),
+    marginBottom: '0 !important',
+    fontSize: '1.25rem',
+  }
+}));
+
+const TabPanelContent = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
-  borderRadius: '12px',
-  boxShadow: '0 4px 20px 0 rgba(0,0,0,0.05)',
-  marginBottom: theme.spacing(3),
+  backgroundColor: theme.palette.background.default, 
 }));
 
 const StyledButton = styled(Button)(({ theme }) => ({
   textTransform: 'none',
   borderRadius: '8px',
-  padding: '8px 20px',
+  padding: '10px 20px',
   fontWeight: 500,
-}));
-
-const StyledTab = styled(Tab)(({ theme }) => ({
-  textTransform: 'none',
-  fontWeight: 500,
-  fontSize: '0.95rem',
+  '&:hover': {
+    boxShadow: theme.shadows[2],
+  }
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -67,17 +117,26 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:last-child td, &:last-child th': {
     border: 0,
   },
+  '& td, & th': {
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  '& td:not(:last-child), & th:not(:last-child)': {
+    borderRight: `1px solid ${theme.palette.divider}`,
+  }
 }));
 
-// Données de démonstration pour les rapports générés
-const demoGeneratedReports = [
-  { id: 1, nom: 'Rapport Etablissement 2024', type: 'Établissement', date: '2024-05-10', format: 'PDF' },
-  { id: 2, nom: 'Rapport Commune 2024', type: 'Commune', date: '2024-05-09', format: 'Excel' },
-  { id: 3, nom: 'Rapport Province 2024', type: 'Province', date: '2024-05-08', format: 'PDF' },
-];
+const SectionCard = styled(Card)(({ theme }) => ({
+  padding: theme.spacing(2.5),
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[1],
+  border: `1px solid ${theme.palette.divider}`,
+  marginBottom: theme.spacing(3),
+  backgroundColor: theme.palette.background.paper,
+}));
 
 // Composant principal des rapports
 const Rapports = () => {
+  const theme = useTheme();
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -97,9 +156,8 @@ const Rapports = () => {
   const [loading, setLoading] = useState(false);
   
   // États pour l'onglet de génération de rapport
-  const [step, setStep] = useState(0);
   const [selectedYear, setSelectedYear] = useState('');
-  const [reportType, setReportType] = useState('etablissement');
+  const [reportType, setReportType] = useState('');
   const [selectedEntity, setSelectedEntity] = useState('');
   const [reportOptions, setReportOptions] = useState({
     includeGeneralStats: true,
@@ -113,6 +171,10 @@ const Rapports = () => {
   const [generatedReports, setGeneratedReports] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Pagination pour la liste des rapports
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  
   // Données pour les sélecteurs
   const [years, setYears] = useState([]);
   const [entities, setEntities] = useState([]);
@@ -122,52 +184,129 @@ const Rapports = () => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        // Charger les années scolaires
         const yearsResponse = await api.get(apiEndpoints.getAnneesScolaires);
-        setYears(yearsResponse.data);
+        // Log pour débogage
+        console.log('Réponse API pour années scolaires:', yearsResponse.data);
+
+        let fetchedYears = [];
+        if (Array.isArray(yearsResponse.data)) { // Si la réponse est directement un tableau
+            fetchedYears = yearsResponse.data;
+        } else if (yearsResponse.data && Array.isArray(yearsResponse.data.annees)) { // Structure { annees: [...] }
+            fetchedYears = yearsResponse.data.annees;
+        } else if (yearsResponse.data && yearsResponse.data.data && Array.isArray(yearsResponse.data.data.annees)) { // Structure { data: { annees: [...] } }
+            fetchedYears = yearsResponse.data.data.annees;
+        } else if (yearsResponse.data && yearsResponse.data.success && Array.isArray(yearsResponse.data.data)) { // Structure { success: true, data: [...] } où data est le tableau d'années
+            fetchedYears = yearsResponse.data.data;
+        } else {
+            console.warn("Structure de réponse inattendue pour les années scolaires:", yearsResponse.data);
+        }
+        setYears(fetchedYears);
         
-        // Charger les entités selon le type de rapport
-        await loadEntities();
+        if (reportType) {
+            await loadEntities(reportType);
+        }
         
-        // Charger l'historique des rapports
         await loadGeneratedReports();
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        showSnackbar('Veuillez sélectionner une année scolaire', 'warning');
+        console.error('Erreur lors du chargement des données initiales:', error);
+        showSnackbar('Erreur lors du chargement des données initiales.', 'error');
       } finally {
         setLoading(false);
       }
     };
     
     fetchInitialData();
-  }, [reportType]);
+  }, []);
   
-  // Charger les entités selon le type de rapport
-  const loadEntities = async () => {
+  // Charger les entités quand le type de rapport change
+  const loadEntities = useCallback(async (currentReportType) => {
+    if (!currentReportType || currentReportType === 'general') {
+        setEntities([]);
+        setSelectedEntity('');
+        return;
+    }
+    setLoading(true);
     try {
       let endpoint = '';
+      let dataKey = '';
+      let addAllOption = false;
+      let allOptionLabel = '';
       
-      switch(reportType) {
+      switch(currentReportType) {
         case 'etablissement':
           endpoint = apiEndpoints.getEtablissements;
+          dataKey = 'etablissements';
+          addAllOption = true;
+          allOptionLabel = 'Tous les établissements';
           break;
         case 'commune':
           endpoint = apiEndpoints.getCommunes;
+          dataKey = 'communes';
+          addAllOption = true;
+          allOptionLabel = 'Toutes les communes';
           break;
         case 'province':
           endpoint = apiEndpoints.getProvinces;
+          dataKey = 'provinces';
+          // addAllOption = false; // Généralement, on ne veut pas "toutes les provinces" en une fois.
           break;
         default:
+          setEntities([]);
+          setLoading(false);
           return;
       }
       
       const response = await api.get(endpoint);
-      setEntities(response.data);
+      let fetchedEntities = [];
+      if (response.data && response.data.success && Array.isArray(response.data[dataKey])) {
+        fetchedEntities = response.data[dataKey];
+      } else if (Array.isArray(response.data)) { 
+        fetchedEntities = response.data;
+      } else {
+        console.warn('Structure de données inattendue pour les entités:', response.data);
+        setEntities([]);
+        showSnackbar('Format de données d\'entités inattendu.', 'warning');
+        setLoading(false);
+        return;
+      }
+
+      if (addAllOption) {
+        // Adapter la structure de l'objet "Tous" pour qu'elle corresponde à celle des autres entités
+        // Ici, je suppose que les entités ont au moins un champ `id` et un champ pour le nom.
+        // Si la structure est entity.code_etab, entity.nom_etab_fr, etc.
+        // il faudra utiliser les clés appropriées.
+        // Pour être générique, je vais essayer de détecter les clés communes ou utiliser des valeurs par défaut.
+        // Ou, plus simplement, utiliser un format fixe pour l'option "Tous" que le Select peut gérer.
+        const idKey = fetchedEntities.length > 0 ? (Object.keys(fetchedEntities[0]).find(k => k.toLowerCase().includes('id') || k.toLowerCase().includes('code'))) : 'id';
+        const nameKey = fetchedEntities.length > 0 ? (Object.keys(fetchedEntities[0]).find(k => k.toLowerCase().includes('nom') || k.toLowerCase().includes('name') || k.toLowerCase().includes('label'))) : 'nom';
+        
+        let allOption = { [idKey]: 'all', [nameKey]: allOptionLabel };
+        // Assurer que l'option "all" a les clés attendues par le MenuItem, même si elles sont vides ailleurs.
+        // Par exemple, si le MenuItem utilise entity.cd_com et entity.ll_com :
+        if (currentReportType === 'commune') allOption = { cd_com: 'all', ll_com: allOptionLabel };
+        else if (currentReportType === 'etablissement') allOption = { code_etab: 'all', nom_etab_fr: allOptionLabel };
+        // Pour province, on ne met pas d'option "Tous" pour l'instant
+
+        setEntities([allOption, ...fetchedEntities]);
+      } else {
+        setEntities(fetchedEntities);
+      }
+
     } catch (error) {
       console.error('Erreur lors du chargement des entités:', error);
       showSnackbar('Erreur lors du chargement des entités. Veuillez réessayer.', 'error');
+      setEntities([]);
+    } finally {
+        setLoading(false);
     }
-  };
+  }, []);
+  
+  useEffect(() => {
+    if (reportType) {
+        loadEntities(reportType);
+        setSelectedEntity('');
+    }
+  }, [reportType, loadEntities]);
   
   // Charger l'historique des rapports générés
   const loadGeneratedReports = async () => {
@@ -185,398 +324,461 @@ const Rapports = () => {
     }
   };
 
-  // Gérer le changement d'étape
-  const handleNext = () => {
-    setStep(step + 1);
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
   };
 
-  const handleBack = () => {
-    setStep(step - 1);
+  const handleReportTypeChange = (event) => {
+    const newReportType = event.target.value;
+    setReportType(newReportType);
+
+    // Réinitialiser les options de contenu si le type n'est pas 'etablissement'
+    if (newReportType !== 'etablissement') {
+      setReportOptions(prevOptions => ({
+        ...prevOptions,
+        includeLevelStats: false,
+        includeSubjectStats: false,
+      }));
+    }
+  };
+
+  const handleOptionChange = (event) => {
+    setReportOptions({ ...reportOptions, [event.target.name]: event.target.checked });
   };
 
   // Gérer la génération du rapport
-  const handleGenerateReport = async () => {
-    try {
+  const handleGenerateReport = async (e) => {
+    if (e) e.preventDefault();
+
       setLoading(true);
-      
-      // Préparer les données pour l'API
-      const reportData = {
-        type_rapport: reportType,
-        id_entite: selectedEntity,
+    try {
+      // 1. Préparer les données pour l'API backend
+      const reportPayload = {
         annee_scolaire: selectedYear,
+        type_rapport: reportType,
+        id_entite: selectedEntity || null,
         options: reportOptions,
         format: exportFormat
       };
       
-      // Simulation de la génération d'un rapport
-      const newReport = {
-        id: Date.now(),
-        nom: `Rapport ${reportType} ${selectedYear}`,
-        type: reportType,
-        date: new Date().toISOString().split('T')[0],
-        format: exportFormat
-      };
-      
-      // Ajouter le nouveau rapport à la liste
-      setGeneratedReports([newReport, ...generatedReports]);
-      
-      // Afficher un message de succès
-      showSnackbar('Rapport généré avec succès', 'success');
-      
-      // Simuler un téléchargement
-      const blob = new Blob([`Rapport ${reportType} ${selectedYear}`], { type: 'text/plain' });
+      // 2. Appeler l'API backend (remplacer par votre véritable endpoint)
+      const response = await api.post(apiEndpoints.generateRapport, reportPayload, {
+        responseType: 'blob',
+      });
+
+      // 3. Gérer la réponse et proposer le téléchargement
+      const filename = `rapport_${reportType}_${selectedYear || 'global'}${selectedEntity ? '_'+selectedEntity : ''}.${exportFormat}`;
+      const contentType = exportFormat === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      const blob = new Blob([response.data], { type: contentType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `rapport_${reportType}_${selectedYear}.${exportFormat.toLowerCase()}`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // Réinitialiser le formulaire
-      setStep(0);
-      setSelectedYear('');
-      setSelectedEntity('');
+      showSnackbar('Rapport généré et téléchargé avec succès!', 'success');
       
     } catch (error) {
       console.error('Erreur lors de la génération du rapport:', error);
-      showSnackbar('Erreur lors de la génération du rapport', 'error');
+      if (error.response && error.response.data && typeof error.response.data === 'object') {
+        const errorData = error.response.data;
+        showSnackbar(errorData.message || 'Erreur lors de la génération du rapport', 'error');
+      } else if (error.response && error.response.statusText) {
+        showSnackbar(`Erreur serveur: ${error.response.statusText}`, 'error');
+      }else {
+        showSnackbar('Erreur inconnue lors de la génération du rapport. Vérifiez la console.', 'error');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   // Gérer la suppression d'un rapport
-  const handleDeleteReport = async (reportId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?')) return;
-    
-    try {
-      setLoading(true);
-      
-      // Simuler la suppression d'un rapport
-      setGeneratedReports(generatedReports.filter(r => r.id !== reportId));
-      
-      showSnackbar('Rapport supprimé avec succès', 'success');
-    } catch (error) {
-      console.error('Erreur lors de la suppression du rapport:', error);
-      showSnackbar('Erreur lors de la suppression du rapport', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteReport = (reportId) => {
+    setGeneratedReports(generatedReports.filter(report => report.id !== reportId));
+    showSnackbar('Rapport supprimé avec succès', 'info');
   };
 
-  // Filtrer les rapports générés
+  const handleDownloadReport = (report) => {
+    // Simuler un téléchargement pour l'instant
+    const blob = new Blob([`Contenu du rapport: ${report.nom}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rapport_${report.type}_${report.date}.${report.format.toLowerCase()}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showSnackbar(`Téléchargement du rapport "${report.nom}"`, 'info');
+  };
+  
+  // Pagination
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const filteredReports = generatedReports.filter(report => 
     report.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    report.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (report.date && new Date(report.date).toLocaleDateString().includes(searchTerm))
+    report.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const paginatedReports = filteredReports.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   // Rendu du formulaire de génération de rapport
   const renderReportForm = () => {
-    switch(step) {
-      case 0: // Sélection de l'année scolaire
+    const isEntitySelectionNeeded = reportType && reportType !== 'general';
+
         return (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Sélectionnez l'année scolaire
-            </Typography>
+      <Box component="form" onSubmit={handleGenerateReport}>
+        {/* Section 1: Année Scolaire et Type de Rapport */}
+        <SectionCard>
+          <Typography variant="h6" gutterBottom>Configuration Initiale</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
             <FormControl fullWidth margin="normal">
               <InputLabel id="year-select-label">Année Scolaire</InputLabel>
               <Select
                 labelId="year-select-label"
-                id="year-select"
                 value={selectedYear}
                 label="Année Scolaire"
                 onChange={(e) => setSelectedYear(e.target.value)}
+                  disabled={loading || years.length === 0}
+                  required 
               >
-                {years.map((year) => (
-                  <MenuItem key={year.id_annee} value={year.annee_scolaire}>
-                    {year.annee_scolaire}
+                  {years.map((yearObj) => (
+                    <MenuItem key={yearObj.annee_scolaire} value={yearObj.annee_scolaire}>
+                      {yearObj.annee_scolaire}
                   </MenuItem>
                 ))}
               </Select>
+                {years.length === 0 && !loading && <Typography variant="caption" color="textSecondary">Aucune année disponible.</Typography>}
             </FormControl>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-              <StyledButton 
-                variant="contained" 
-                color="primary" 
-                onClick={handleNext}
-                disabled={!selectedYear || loading}
-                endIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-              >
-                Suivant
-              </StyledButton>
-            </Box>
-          </Box>
-        );
-        
-      case 1: // Sélection du type de rapport et de l'entité
-        return (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Sélectionnez le type de rapport
-            </Typography>
-            <Grid container spacing={3}>
+            </Grid>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth margin="normal">
                   <InputLabel id="report-type-label">Type de Rapport</InputLabel>
                   <Select
                     labelId="report-type-label"
-                    id="report-type"
                     value={reportType}
                     label="Type de Rapport"
-                    onChange={(e) => setReportType(e.target.value)}
-                  >
-                    <MenuItem value="etablissement">Établissement</MenuItem>
-                    <MenuItem value="commune">Commune</MenuItem>
-                    <MenuItem value="province">Province</MenuItem>
+                  onChange={handleReportTypeChange}
+                  required 
+                >
+                  <MenuItem value="general">Rapport Général (Province/Global)</MenuItem>
+                  <MenuItem value="etablissement">Rapport par Établissement</MenuItem>
+                  <MenuItem value="commune">Rapport par Commune</MenuItem>
+                  <MenuItem value="province">Rapport par Province Spécifique</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel id="entity-select-label">
-                    {reportType === 'etablissement' ? 'Établissement' : 
-                     reportType === 'commune' ? 'Commune' : 'Province'}
-                  </InputLabel>
+          </Grid>
+        </SectionCard>
+
+        {/* Section 2: Sélection de l'Entité (si nécessaire) */}
+        {isEntitySelectionNeeded && (
+          <SectionCard>
+            <Typography variant="h6" gutterBottom>Sélection de l'Entité ({reportType})</Typography>
+            <FormControl fullWidth margin="normal" disabled={loading || entities.length === 0}>
+              <InputLabel id="entity-select-label">Sélectionner l'Entité</InputLabel>
                   <Select
                     labelId="entity-select-label"
-                    id="entity-select"
                     value={selectedEntity}
-                    label={reportType === 'etablissement' ? 'Établissement' : 
-                           reportType === 'commune' ? 'Commune' : 'Province'}
+                label="Sélectionner l'Entité"
                     onChange={(e) => setSelectedEntity(e.target.value)}
+                required={isEntitySelectionNeeded}
                   >
-                    {entities.map((entity) => (
-                      <MenuItem key={entity.id} value={entity.id}>
-                        {entity.nom}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-              <StyledButton 
-                onClick={handleBack}
-                variant="outlined"
-                disabled={loading}
-              >
-                Retour
-              </StyledButton>
-              <StyledButton 
-                variant="contained" 
-                color="primary" 
-                onClick={handleNext}
-                disabled={!selectedEntity || loading}
-                endIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-              >
-                Suivant
-              </StyledButton>
-            </Box>
-          </Box>
-        );
-        
-      case 2: // Options du rapport
-        return (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Options du rapport
-            </Typography>
-            <FormGroup>
+                {entities.map((entity) => {
+                  const entityId = entity.id || entity.cd_com || entity.code_etab || entity.code_province;
+                  const entityName = entity.nom || entity.ll_com || entity.nom_etab_fr || entity.nom_province_fr;
+                  return (
+                    <MenuItem key={entityId} value={entityId}>
+                      {entityName || `Entité ${entityId}`}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+              {entities.length === 0 && !loading && reportType && reportType !== 'general' && (
+                <Typography variant="caption" color="textSecondary">Aucune entité disponible pour ce type.</Typography>
+              )}
+            </FormControl>
+          </SectionCard>
+        )}
+
+        {/* Section 3: Contenu du Rapport */}
+        <SectionCard>
+          <Typography variant="h6" gutterBottom>Contenu du Rapport</Typography>
+          <Grid container spacing={1}>
+            <Grid item xs={12} sm={6}>
               <FormControlLabel 
-                control={
-                  <Checkbox 
-                    checked={reportOptions.includeGeneralStats} 
-                    onChange={(e) => setReportOptions({...reportOptions, includeGeneralStats: e.target.checked})} 
-                  />
-                } 
-                label="Inclure les statistiques générales" 
+                control={<Checkbox checked={reportOptions.includeGeneralStats} onChange={handleOptionChange} name="includeGeneralStats" />}
+                label="Statistiques Générales"
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <FormControlLabel 
                 control={
                   <Checkbox 
                     checked={reportOptions.includeLevelStats} 
-                    onChange={(e) => setReportOptions({...reportOptions, includeLevelStats: e.target.checked})} 
-                  />
-                } 
-                label="Inclure les statistiques par niveau" 
+                    onChange={handleOptionChange} 
+                    name="includeLevelStats" 
+                    disabled={reportType !== 'etablissement'} // Désactiver si non pertinent
+                  />}
+                label="Statistiques par Niveau"
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <FormControlLabel 
                 control={
                   <Checkbox 
                     checked={reportOptions.includeSubjectStats} 
-                    onChange={(e) => setReportOptions({...reportOptions, includeSubjectStats: e.target.checked})} 
-                  />
-                } 
-                label="Inclure les statistiques par matière" 
+                    onChange={handleOptionChange} 
+                    name="includeSubjectStats" 
+                    disabled={reportType !== 'etablissement'} // Désactiver si non pertinent
+                  />}
+                label="Statistiques par Matière"
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <FormControlLabel 
                 control={
                   <Checkbox 
                     checked={reportOptions.includeCharts} 
-                    onChange={(e) => setReportOptions({...reportOptions, includeCharts: e.target.checked})} 
+                    onChange={handleOptionChange} 
+                    name="includeCharts" 
+                    icon={<BarChartIcon />} 
+                    checkedIcon={<BarChartIcon color="primary"/>}
                   />
                 } 
-                label="Inclure les graphiques" 
+                label="Inclure les Diagrammes Visuels"
               />
-            </FormGroup>
-            
-            <Box sx={{ mt: 3, mb: 3 }}>
-              <FormLabel component="legend">Format d'export</FormLabel>
-              <RadioGroup 
-                row 
-                value={exportFormat}
-                onChange={(e) => setExportFormat(e.target.value)}
-              >
-                <FormControlLabel value="pdf" control={<Radio />} label="PDF" />
-                <FormControlLabel value="excel" control={<Radio />} label="Excel" />
+              <Typography variant="caption" display="block" color="text.secondary" ml={4}>
+                Permet d'intégrer les graphiques d'analyse dans le rapport.
+              </Typography>
+            </Grid>
+          </Grid>
+        </SectionCard>
+
+        {/* Section 4: Format et Bouton de Génération */}
+        <SectionCard>
+          <Typography variant="h6" gutterBottom>Format d'Exportation</Typography>
+          <FormControl component="fieldset" margin="normal">
+            <FormLabel component="legend">Sélectionner le Format</FormLabel>
+            <RadioGroup row value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
+              <FormControlLabel value="pdf" control={<Radio icon={<PictureAsPdfIcon />} checkedIcon={<PictureAsPdfIcon color="primary" />}/>} label="PDF" />
+              <FormControlLabel value="excel" control={<Radio icon={<AssessmentOutlinedIcon />} checkedIcon={<AssessmentOutlinedIcon color="primary" />}/>} label="Excel" />
               </RadioGroup>
-            </Box>
+          </FormControl>
+        </SectionCard>
             
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+        {/* Boutons d'action principaux */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3, mb: 2 }}>
               <StyledButton 
-                onClick={handleBack}
                 variant="outlined"
+            onClick={(e) => {
+              setSelectedYear('');
+              setReportType('');
+              setSelectedEntity('');
+              setReportOptions({
+                includeGeneralStats: true,
+                includeLevelStats: true,
+                includeSubjectStats: true,
+                includeCharts: true
+              });
+              setExportFormat('pdf');
+              showSnackbar('Formulaire réinitialisé', 'info');
+            }}
+            color="secondary"
                 disabled={loading}
               >
-                Retour
+            Réinitialiser
               </StyledButton>
               <StyledButton 
+            type="submit"
                 variant="contained" 
                 color="primary" 
-                onClick={handleGenerateReport}
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+            onClick={(e) => { if (typeof handleGenerateReport === 'function') handleGenerateReport(e); }}
+            disabled={loading || !selectedYear || !reportType || (isEntitySelectionNeeded && !selectedEntity)}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
               >
-                {loading ? 'Génération...' : 'Générer le rapport'}
+            {loading ? 'Génération en cours...' : 'Générer le Rapport'}
               </StyledButton>
             </Box>
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
           </Box>
         );
-        
-      default:
-        return null;
-    }
   };
 
-  // Rendu de l'onglet des rapports générés
+  // Rendu de la liste des rapports générés
   const renderGeneratedReports = () => (
-    <Box sx={{ mt: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+    <SectionCard>
+      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+        Historique des Rapports Générés
+      </Typography>
         <TextField
-          label="Rechercher un rapport"
+        fullWidth
+        label="Rechercher un rapport..."
           variant="outlined"
-          size="small"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </Box>
-      
-      <TableContainer component={Paper}>
-        <Table>
+        sx={{ mb: 2.5 }}
+      />
+      {loading && paginatedReports.length === 0 && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
+      {!loading && filteredReports.length === 0 && (
+        <Typography sx={{ textAlign: 'center', p: 3, color: theme.palette.text.secondary }}>
+          Aucun rapport trouvé ou généré pour le moment.
+        </Typography>
+      )}
+      {filteredReports.length > 0 && (
+        <>
+          <TableContainer component={Paper} variant="outlined" sx={{ borderColor: theme.palette.divider }}>
+            <Table sx={{ minWidth: 650 }} aria-label="tableau des rapports générés" stickyHeader>
           <TableHead>
-            <TableRow>
-              <TableCell>Nom</TableCell>
+                <TableRow sx={{ 
+                  '& th': {
+                    backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[800],
+                    color: theme.palette.getContrastText(theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[800]),
+                    fontWeight: 'bold',
+                    borderBottom: `2px solid ${theme.palette.divider}`,
+                    borderRight: `1px solid ${theme.palette.divider}`,
+                    padding: '10px 16px',
+                  },
+                  '& th:last-child': {
+                    borderRight: 0,
+                  }
+                }}>
+                  <TableCell>Nom du Rapport</TableCell>
               <TableCell>Type</TableCell>
-              <TableCell>Date</TableCell>
+                  <TableCell>Date de Génération</TableCell>
               <TableCell>Format</TableCell>
-              <TableCell align="right">Actions</TableCell>
+                  <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredReports.map((report) => (
+                {paginatedReports.map((report) => (
               <StyledTableRow key={report.id}>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={500}>
+                    <TableCell component="th" scope="row" sx={{ padding: '8px 16px' }}>
                     {report.nom}
-                  </Typography>
                 </TableCell>
-                <TableCell>
-                  <Chip 
-                    label={report.type} 
-                    size="small" 
-                    color="primary"
-                    variant="outlined"
-                  />
+                    <TableCell sx={{textTransform: 'capitalize', padding: '8px 16px'}}>{report.type}</TableCell>
+                    <TableCell sx={{ padding: '8px 16px' }}>{new Date(report.date).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ padding: '8px 16px' }}>
+                        {report.format.toUpperCase() === 'PDF' ? 
+                            <PictureAsPdfIcon sx={{ color: theme.palette.error.main, verticalAlign: 'middle', mr: 0.5 }} /> :
+                            <AssessmentOutlinedIcon sx={{ color: theme.palette.success.main, verticalAlign: 'middle', mr: 0.5 }} />
+                        }
+                        {report.format.toUpperCase()}
                 </TableCell>
-                <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={report.format} 
-                    size="small"
-                    color={report.format === 'PDF' ? 'error' : 'success'}
-                    sx={{ minWidth: 70 }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton 
-                    color="primary" 
-                    onClick={() => alert(`Télécharger le rapport ${report.id}`)}
-                  >
+                    <TableCell align="center">
+                      <Tooltip title="Télécharger">
+                        <IconButton onClick={() => handleDownloadReport(report)} color="primary" size="small">
                     <DownloadIcon />
                   </IconButton>
-                  <IconButton 
-                    color="error" 
-                    onClick={() => handleDeleteReport(report.id)}
-                  >
+                      </Tooltip>
+                      <Tooltip title="Supprimer">
+                        <IconButton onClick={() => handleDeleteReport(report.id)} color="error" size="small">
                     <DeleteIcon />
                   </IconButton>
+                      </Tooltip>
                 </TableCell>
               </StyledTableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredReports.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Rapports par page:"
+          />
+        </>
+      )}
+    </SectionCard>
   );
 
+  // TabPanel component (peut être externalisé si utilisé ailleurs)
+  function TabPanel(props) {
+    const { children, value, index, ...other } = props;
+    return (
+      <div
+        role="tabpanel"
+        hidden={value !== index}
+        id={`report-tabpanel-${index}`}
+        aria-labelledby={`report-tab-${index}`}
+        {...other}
+      >
+        {value === index && (
+          <TabPanelContent>
+            {children}
+          </TabPanelContent>
+        )}
+      </div>
+  );
+  }
+
+  // Conditional rendering for initial page load
+  if (loading) {
+    return (
+      <Box 
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          minHeight: 'calc(100vh - 120px)', // Adjust based on actual header/nav height
+        }}
+      >
+        <InitialPageLoadIndicator message="Chargement des rapports..." />
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 600 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <AssessmentIcon color="primary" sx={{ fontSize: '2.5rem', mr: 1.5 }} />
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Gestion des Rapports
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Générez et gérez vos rapports d'analyse des performances scolaires
         </Typography>
       </Box>
       
-      <StyledPaper elevation={0}>
-        <Tabs 
+      <MainReportsCard>
+        <StyledTabs 
           value={activeTab} 
-          onChange={(e, newValue) => setActiveTab(newValue)}
-          indicatorColor="primary"
-          textColor="primary"
+          onChange={handleTabChange} 
+          aria-label="Onglets des rapports"
           variant="fullWidth"
-          sx={{
-            mb: 3,
-            '& .MuiTabs-indicator': {
-              height: 4,
-              borderRadius: '4px 4px 0 0',
-            },
-          }}
         >
-          <StyledTab label="Générer un rapport" />
-          <StyledTab label="Historique des rapports" />
-        </Tabs>
-        
-        <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-          {loading ? (
-            <Box display="flex" justifyContent="center" my={4}>
-              <CircularProgress />
-            </Box>
-          ) : activeTab === 0 ? (
-            renderReportForm()
-          ) : (
-            renderGeneratedReports()
-          )}
-        </Box>
-      </StyledPaper>
+          <StyledTab icon={<BarChartIcon />} label="Génération de Rapport" id="report-tab-0" aria-controls="report-tabpanel-0" />
+          <StyledTab icon={<ListAltIcon />} label="Rapports Générés" id="report-tab-1" aria-controls="report-tabpanel-1" />
+        </StyledTabs>
 
-      {/* Snackbar pour les notifications */}
+        <TabPanel value={activeTab} index={0}>
+          {renderReportForm()}
+        </TabPanel>
+        <TabPanel value={activeTab} index={1}>
+          {renderGeneratedReports()}
+        </TabPanel>
+      </MainReportsCard>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -591,7 +793,7 @@ const Rapports = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Container>
   );
 };
 

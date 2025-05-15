@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Admin;
+use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
@@ -15,8 +16,8 @@ class AdminSeeder extends Seeder
     {
         Admin::create([
             'nom' => 'Administrateur',
-            'email' => 'admin@schoolperformance.ma',
-            'mot_de_passe' => bcrypt('admin123')
+            'email' => 'admin@gmail.com',
+            'password' => Hash::make('admin123')
         ]);
     }
 }
