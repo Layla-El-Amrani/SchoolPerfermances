@@ -1,0 +1,156 @@
+.settings-container {
+  padding: 2rem 0;
+}
+
+.settings-title {
+  margin-bottom: 2rem;
+  color: var(--primary-color);
+}
+
+.main-settings-card {
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.settings-tabs {
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-light);
+}
+
+.settings-tabs .MuiTabs-indicator {
+  background-color: var(--primary-color);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+.settings-tab {
+  text-transform: none;
+  min-width: 150px;
+  font-weight: 400;
+  margin-right: 4px;
+  padding: 12px 20px;
+  border-radius: 8px 8px 0 0;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  border-bottom: none;
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.settings-tab:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.settings-tab.Mui-selected {
+  color: var(--primary-color);
+  font-weight: 600;
+  background-color: var(--background-paper);
+  border-top: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  opacity: 1;
+}
+
+.settings-tab .MuiTab-wrapper {
+  flex-direction: row;
+  align-items: center;
+}
+
+.settings-tab .MuiSvgIcon-root {
+  margin-right: 8px;
+  margin-bottom: 0 !important;
+  font-size: 1.2rem;
+}
+
+.tab-panel-content {
+  padding: 1.75rem;
+  background-color: var(--background-paper);
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: var(--background-paper);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.setting-item:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.setting-item-content {
+  flex: 1;
+}
+
+.setting-item-title {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.setting-item-description {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.settings-button {
+  text-transform: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.settings-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .settings-container {
+    padding: 1rem 0;
+  }
+
+  .settings-tab {
+    min-width: 120px;
+    padding: 8px 16px;
+  }
+
+  .tab-panel-content {
+    padding: 1rem;
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .settings-actions {
+    flex-direction: column;
+  }
+
+  .settings-button {
+    width: 100%;
+  }
+} 

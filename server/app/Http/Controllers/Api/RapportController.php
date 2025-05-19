@@ -337,4 +337,151 @@ class RapportController extends Controller
             ]
         ]);
     }
+
+    public function getDashboardStats()
+    {
+        // Récupérer l'année scolaire active
+        $anneeActive = \App\Models\AnneeScolaire::where('est_courante', true)->first();
+        $annee_scolaire = $anneeActive ? $anneeActive->annee_scolaire : null;
+
+        // Statistiques générales
+        $nombreEleves = Eleve::when($annee_scolaire, function($query) use ($annee_scolaire) {
+            $query->whereHas('resultats', function($q) use ($annee_scolaire) {
+                $q->where('annee_scolaire', $annee_scolaire);
+            });
+        })->count();
+
+        $moyenneGenerale = ResultatEleve::when($annee_scolaire, function($query) use ($annee_scolaire) {
+            $query->where('annee_scolaire', $annee_scolaire);
+        })->avg('MoyenSession');
+
+        $totalResultats = ResultatEleve::when($annee_scolaire, function($query) use ($annee_scolaire) {
+            $query->where('annee_scolaire', $annee_scolaire);
+        })->count();
+
+        $reussis = ResultatEleve::when($annee_scolaire, function($query) use ($annee_scolaire) {
+            $query->where('annee_scolaire', $annee_scolaire);
+        })->where('MoyenSession', '>=', 10)->count();
+
+        $tauxReussite = $totalResultats > 0 ? ($reussis / $totalResultats) * 100 : 0;
+
+        // Trouver la meilleure matière
+        $meilleureMatiere = Matiere::with(['resultats' => function($query) use ($annee_scolaire) {
+            $query->when($annee_scolaire, function($q) use ($annee_scolaire) {
+                $q->where('annee_scolaire', $annee_scolaire);
+            });
+        }])->get()->map(function($matiere) {
+            $moyenne = $matiere->resultats->avg($matiere->nom_colonne);
+            return [
+                'matiere' => $matiere->nom_matiere,
+                'moyenne' => $moyenne
+            ];
+        })->sortByDesc('moyenne')->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'totalStudents' => $nombreEleves,
+                'averageScore' => round($moyenneGenerale, 2),
+                'passRate' => round($tauxReussite, 2),
+                'topPerformingSubject' => $meilleureMatiere ? $meilleureMatiere['matiere'] : 'N/A'
+            ]
+        ]);
+    }
+
+    public function getPerformanceData()
+    {
+        // Récupérer l'année scolaire active
+        $anneeActive = \App\Models\AnneeScolaire::where('est_courante', true)->first();
+        $annee_scolaire = $anneeActive ? $anneeActive->annee_scolaire : null;
+
+        // Récupérer les données de performance par niveau
+        $niveaux = NiveauScolaire::with(['resultats' => function($query) use ($annee_scolaire) {
+            $query->when($annee_scolaire, function($q) use ($annee_scolaire) {
+                $q->where('annee_scolaire', $annee_scolaire);
+            });
+        }])->get();
+
+        $performanceData = $niveaux->map(function($niveau) {
+            $moyenne = $niveau->resultats->avg('MoyenSession');
+            $reussis = $niveau->resultats->where('MoyenSession', '>=', 10)->count();
+            $total = $niveau->resultats->count();
+            $tauxReussite = $total > 0 ? ($reussis / $total) * 100 : 0;
+
+            return [
+                'niveau' => $niveau->nom_niveau,
+                'moyenne' => round($moyenne, 2),
+                'tauxReussite' => round($tauxReussite, 2)
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $performanceData
+        ]);
+    }
+
+    public function getSubjectDistribution()
+    {
+        // Récupérer l'année scolaire active
+        $anneeActive = \App\Models\AnneeScolaire::where('est_courante', true)->first();
+        $annee_scolaire = $anneeActive ? $anneeActive->annee_scolaire : null;
+
+        // Récupérer la distribution des matières
+        $matieres = Matiere::with(['resultats' => function($query) use ($annee_scolaire) {
+            $query->when($annee_scolaire, function($q) use ($annee_scolaire) {
+                $q->where('annee_scolaire', $annee_scolaire);
+            });
+        }])->get();
+
+        $distribution = $matieres->map(function($matiere) {
+            $moyenne = $matiere->resultats->avg($matiere->nom_colonne);
+            return [
+                'name' => $matiere->nom_matiere,
+                'value' => round($moyenne, 2)
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $distribution
+        ]);
+    }
+
+    public function getTrendData()
+    {
+        // Récupérer les 5 dernières années scolaires
+        $annees = \App\Models\AnneeScolaire::orderBy('annee_scolaire', 'desc')
+            ->take(5)
+            ->pluck('annee_scolaire')
+            ->reverse();
+
+        $trendData = $annees->map(function($annee) {
+            $moyenne = ResultatEleve::where('annee_scolaire', $annee)
+                ->avg('MoyenSession');
+
+            $totalResultats = ResultatEleve::where('annee_scolaire', $annee)->count();
+            $reussis = ResultatEleve::where('annee_scolaire', $annee)
+                ->where('MoyenSession', '>=', 10)
+                ->count();
+            $tauxReussite = $totalResultats > 0 ? ($reussis / $totalResultats) * 100 : 0;
+
+            return [
+                'name' => $annee,
+                'moyenne' => round($moyenne, 2),
+                'reussite' => round($tauxReussite, 2)
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $trendData
+        ]);
+    }
+    public function generate(Request $request)
+    {
+        return response()->json([
+            'message' => 'Rapport généré avec succès',
+        ]);
+    }
 }
