@@ -1,0 +1,31 @@
+.tab-panel-content {
+  padding: 24px;
+  width: 100%;
+}
+
+/* Animation pour la transition des onglets */
+.tab-panel-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Styles pour le conteneur du panneau */
+[role="tabpanel"] {
+  width: 100%;
+  min-height: 300px;
+}
+
+/* Styles pour le panneau caché */
+[role="tabpanel"][hidden] {
+  display: none;
+} 

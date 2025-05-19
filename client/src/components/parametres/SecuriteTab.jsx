@@ -18,10 +18,11 @@ import {
   VisibilityOff as VisibilityOffIcon,
   Save as SaveIcon
 } from '@mui/icons-material';
+import { apiEndpoints, protectedApi } from '../../services/api';
 
 const SecuriteTab = ({ 
   loading, 
-  handlePasswordSubmit 
+  setLoading,
 }) => {
   const [showPassword, setShowPassword] = useState({
     currentPassword: false,
@@ -50,6 +51,32 @@ const SecuriteTab = ({
         ...prev,
         [name]: ''
       }));
+    }
+  };
+  const handlePasswordSubmit = async (e) => {
+    // e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await protectedApi.put(apiEndpoints.updatePassword, {
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        new_password_confirmation: passwordData.confirmPassword
+      });
+      showSnackbar('Mot de passe mis à jour avec succès', 'success');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        showPassword: false,
+        showNewPassword: false,
+        showConfirmPassword: false
+      });
+      setEditMode(prev => ({ ...prev, password: false }));
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du mot de passe:', error);
+      showSnackbar(error.response?.data?.message || 'Erreur lors de la mise à jour du mot de passe', 'error');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -215,5 +242,7 @@ const SecuriteTab = ({
     </Box>
   );
 };
+
+
 
 export default SecuriteTab;

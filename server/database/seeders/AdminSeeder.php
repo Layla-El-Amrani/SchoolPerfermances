@@ -15,9 +15,17 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         Admin::create([
-            'nom' => 'Administrateur',
+            'nom' => 'Admin',
+            'prenom' => 'System',
             'email' => 'admin@gmail.com',
-            'password' => Hash::make('admin123')
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+            // 'preferences' => json_encode([
+            //     'darkMode' => false,
+            //     'notifications' => true,
+            //     'newsletter' => true,
+            //     'language' => 'fr'
+            // ])
         ]);
     }
 }
